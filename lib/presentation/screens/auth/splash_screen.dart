@@ -32,6 +32,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // This ensures we get the actual current state after app reinstall
     final User? currentUser = FirebaseAuth.instance.currentUser;
     
+    debugPrint('Splash: currentUser = ${currentUser?.uid}');
+    
     // Navigate based on auth state
     if (currentUser != null) {
       // Fetch user profile directly from Firestore to check profileSetupComplete
@@ -44,16 +46,38 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         if (!mounted) return;
         
         if (userDoc.exists) {
-          final profileComplete = userDoc.data()?['profileSetupComplete'] ?? false;
+          final data = userDoc.data();
+          debugPrint('Splash: User doc exists, data = $data');
           
-          if (profileComplete) {
-            // User has completed onboarding, go to home
+          // Check if profile is complete - either by explicit flag OR by having essential fields
+          final profileComplete = data?['profileSetupComplete'] ?? false;
+          final hasName = data?['name'] != null && (data?['name'] as String).isNotEmpty;
+          final hasBirthday = data?['dateOfBirth'] != null || data?['birthday'] != null;
+          final hasGender = data?['gender'] != null;
+          final hasPhotos = data?['photos'] != null && (data?['photos'] as List).isNotEmpty;
+          
+          // Consider profile complete if flag is true OR if essential fields exist
+          final isProfileUsable = profileComplete || (hasName && hasBirthday && hasGender && hasPhotos);
+          
+          debugPrint('Splash: profileComplete=$profileComplete, hasName=$hasName, hasBirthday=$hasBirthday, hasGender=$hasGender, hasPhotos=$hasPhotos');
+          debugPrint('Splash: isProfileUsable=$isProfileUsable');
+          
+          if (isProfileUsable) {
+            // User has a usable profile, go to home
+            // Also update profileSetupComplete to true if it wasn't
+            if (!profileComplete) {
+              await FirebaseFirestore.instance
+                  .collection(FirebaseCollections.users)
+                  .doc(currentUser.uid)
+                  .update({'profileSetupComplete': true});
+            }
             context.go('/home');
           } else {
             // User needs to complete onboarding
             context.go('/onboarding/setup');
           }
         } else {
+          debugPrint('Splash: No user document found');
           // No user document, needs onboarding
           context.go('/onboarding/setup');
         }
@@ -63,6 +87,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         context.go('/onboarding/setup');
       }
     } else {
+      debugPrint('Splash: No user logged in, going to login');
       // No user logged in, go to login
       context.go('/login');
     }
