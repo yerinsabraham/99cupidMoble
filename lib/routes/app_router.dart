@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../presentation/screens/auth/splash_screen.dart';
@@ -24,8 +25,10 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) {
+      final currentPath = state.matchedLocation;
+      
       // Don't redirect if on splash screen - let it handle navigation
-      if (state.matchedLocation == '/splash') {
+      if (currentPath == '/splash') {
         return null;
       }
       
@@ -33,32 +36,56 @@ final routerProvider = Provider<GoRouter>((ref) {
       final user = authState.value;
       final profile = userProfile.value;
       
-      // If still loading and not on splash, wait
+      debugPrint('Router: path=$currentPath, isLoading=$isLoading, user=${user?.uid}, profile=${profile?.name}');
+      
+      // If still loading, don't redirect - wait for data
       if (isLoading) {
+        debugPrint('Router: Still loading, no redirect');
         return null;
       }
       
       final isAuthenticated = user != null;
-      final isOnAuthPage = state.matchedLocation.startsWith('/login') ||
-          state.matchedLocation.startsWith('/signup');
-      final isOnOnboarding = state.matchedLocation.startsWith('/onboarding');
-      final profileComplete = profile?.profileSetupComplete ?? false;
+      final isOnAuthPage = currentPath.startsWith('/login') ||
+          currentPath.startsWith('/signup');
+      final isOnOnboarding = currentPath.startsWith('/onboarding');
+      final isOnHome = currentPath.startsWith('/home');
+      
+      // Check if profile is complete - either by flag OR by having essential fields
+      bool profileComplete = false;
+      if (profile != null) {
+        final hasName = profile.name.isNotEmpty;
+        final hasGender = profile.gender.isNotEmpty;
+        final hasPhotos = profile.photos.isNotEmpty;
+        profileComplete = profile.profileSetupComplete || (hasName && hasGender && hasPhotos);
+        debugPrint('Router: profileSetupComplete=${profile.profileSetupComplete}, hasName=$hasName, hasGender=$hasGender, hasPhotos=$hasPhotos, profileComplete=$profileComplete');
+      }
       
       // If not authenticated and trying to access protected route
-      if (!isAuthenticated && !isOnAuthPage) {
+      if (!isAuthenticated && !isOnAuthPage && currentPath != '/splash') {
+        debugPrint('Router: Not authenticated, redirecting to login');
         return '/login';
       }
       
-      // If authenticated but profile incomplete, redirect to onboarding
-      if (isAuthenticated && !profileComplete && !isOnOnboarding && !isOnAuthPage) {
+      // If authenticated and on home, trust the splash screen's decision
+      // Only redirect away from home if profile is definitely null (not just loading)
+      if (isAuthenticated && isOnHome && profile == null && !userProfile.isLoading) {
+        debugPrint('Router: On home but no profile found, redirecting to onboarding');
+        return '/onboarding/setup';
+      }
+      
+      // If authenticated but profile incomplete and not on home, redirect to onboarding
+      if (isAuthenticated && !profileComplete && !isOnOnboarding && !isOnAuthPage && !isOnHome) {
+        debugPrint('Router: Profile incomplete, redirecting to onboarding');
         return '/onboarding/setup';
       }
       
       // If authenticated with complete profile and on auth/onboarding page, go to home
       if (isAuthenticated && profileComplete && (isOnAuthPage || isOnOnboarding)) {
+        debugPrint('Router: Profile complete, redirecting to home');
         return '/home';
       }
       
+      debugPrint('Router: No redirect needed');
       // No redirect needed
       return null;
     },
