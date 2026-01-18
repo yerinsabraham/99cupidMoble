@@ -15,15 +15,21 @@ class MatchingService {
     Map<String, dynamic>? filters,
   }) async {
     try {
+      debugPrint('🔍 MatchingService: Getting matches for user $userId');
+      
       // Get current user profile
       final userDoc = await _firestore
           .collection(FirebaseCollections.users)
           .doc(userId)
           .get();
       
-      if (!userDoc.exists) return [];
+      if (!userDoc.exists) {
+        debugPrint('❌ Current user document not found');
+        return [];
+      }
       
       final currentUser = UserModel.fromFirestore(userDoc);
+      debugPrint('✅ Current user loaded: ${currentUser.displayName}');
 
       // Get all users with complete profiles
       var query = _firestore
@@ -31,38 +37,48 @@ class MatchingService {
           .where('profileSetupComplete', isEqualTo: true);
 
       final snapshot = await query.get();
+      debugPrint('📊 Found ${snapshot.docs.length} users with profileSetupComplete=true');
+      
       final profiles = <UserModel>[];
 
       for (final doc in snapshot.docs) {
         final profile = UserModel.fromFirestore(doc);
         
         // Exclude self
-        if (profile.uid == userId) continue;
+        if (profile.uid == userId) {
+          debugPrint('⏭️  Skipping self: ${profile.displayName}');
+          continue;
+        }
         
         // Apply basic filters
         if (filters != null) {
-          if (!_meetsFilters(profile, filters)) continue;
+          if (!_meetsFilters(profile, filters)) {
+            debugPrint('⏭️  Skipping ${profile.displayName} - doesn\'t meet filters');
+            continue;
+          }
         }
         
+        debugPrint('✅ Adding profile: ${profile.displayName}');
         profiles.add(profile);
       }
 
+      debugPrint('📦 Total profiles after filtering: ${profiles.length}');
+
       // Calculate compatibility scores
       final scored = profiles.map((profile) {
-        return MapEntry(
-          profile,
-          _calculateCompatibility(currentUser, profile),
-        );
+        final score = _calculateCompatibility(currentUser, profile);
+        debugPrint('📊 ${profile.displayName}: score=$score');
+        return MapEntry(profile, score);
       }).toList();
 
       // Sort by score
       scored.sort((a, b) => b.value.compareTo(a.value));
 
-      return scored.take(limit).map((e) => e.key).toList();
+      final result = scored.take(limit).map((e) => e.key).toList();
+      debugPrint('✨ Returning ${result.length} matches');
+      return result;
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error getting matches: $e');
-      }
+      debugPrint('❌ Error getting matches: $e');
       return [];
     }
   }

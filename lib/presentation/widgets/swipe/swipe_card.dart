@@ -119,21 +119,21 @@ class _SwipeCardState extends State<SwipeCard> with SingleTickerProviderStateMix
           ..translate(_position.dx, _position.dy)
           ..rotateZ(_angle * math.pi / 180),
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.92,
-          height: MediaQuery.of(context).size.height * 0.68,
+          width: MediaQuery.of(context).size.width * 0.94,
+          height: MediaQuery.of(context).size.height * 0.75,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 30,
-                offset: const Offset(0, 15),
-                spreadRadius: 5,
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 40,
+                offset: const Offset(0, 10),
+                spreadRadius: 2,
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             child: Stack(
               children: [
                 // Photo with Hero animation support
@@ -211,26 +211,27 @@ class _SwipeCardState extends State<SwipeCard> with SingleTickerProviderStateMix
                 // Premium Photo Indicators
                 if (photos.length > 1)
                   Positioned(
-                    top: 12,
-                    left: 16,
-                    right: 16,
+                    top: 16,
+                    left: 12,
+                    right: 12,
                     child: Row(
                       children: List.generate(
                         photos.length,
                         (index) => Expanded(
                           child: Container(
-                            height: 4,
-                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            height: 3,
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
                             decoration: BoxDecoration(
                               color: index == _currentPhotoIndex
                                   ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.4),
+                                  : Colors.white.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(2),
                               boxShadow: index == _currentPhotoIndex
                                   ? [
                                       BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.3),
+                                        color: Colors.black.withValues(alpha: 0.2),
                                         blurRadius: 4,
+                                        offset: const Offset(0, 1),
                                       ),
                                     ]
                                   : null,
@@ -297,21 +298,21 @@ class _SwipeCardState extends State<SwipeCard> with SingleTickerProviderStateMix
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(20, 80, 20, 28),
                     decoration: BoxDecoration(
                       borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(24),
-                        bottomRight: Radius.circular(24),
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
                       ),
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withValues(alpha: 0.4),
-                          Colors.black.withValues(alpha: 0.85),
+                          Colors.black.withValues(alpha: 0.3),
+                          Colors.black.withValues(alpha: 0.75),
                         ],
-                        stops: const [0.0, 0.4, 1.0],
+                        stops: const [0.0, 0.5, 1.0],
                       ),
                     ),
                     child: Column(

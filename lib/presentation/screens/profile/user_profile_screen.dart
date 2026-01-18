@@ -202,19 +202,55 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: LoadingIndicator()),
+      return Scaffold(
+        backgroundColor: AppColors.softIvory,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.deepPlum),
+            onPressed: () => context.pop(),
+          ),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(
+            color: AppColors.cupidPink,
+          ),
+        ),
       );
     }
 
     if (_profile == null) {
       return Scaffold(
+        backgroundColor: AppColors.softIvory,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.deepPlum),
+            onPressed: () => context.pop(),
+          ),
         ),
-        body: const Center(
-          child: Text('User not found'),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.person_off_outlined,
+                size: 80,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'User not found',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: AppColors.deepPlum,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }

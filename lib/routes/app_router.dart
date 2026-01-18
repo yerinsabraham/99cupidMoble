@@ -36,7 +36,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final user = authState.value;
       final profile = userProfile.value;
       
-      debugPrint('Router: path=$currentPath, isLoading=$isLoading, user=${user?.uid}, profile=${profile?.name}');
+      debugPrint('Router: path=$currentPath, isLoading=$isLoading, user=${user?.uid}, profile=${profile?.displayName}');
       
       // If still loading, don't redirect - wait for data
       if (isLoading) {
@@ -49,11 +49,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           currentPath.startsWith('/signup');
       final isOnOnboarding = currentPath.startsWith('/onboarding');
       final isOnHome = currentPath.startsWith('/home');
+      final isOnSettings = currentPath.startsWith('/settings');
       
       // Check if profile is complete - either by flag OR by having essential fields
       bool profileComplete = false;
       if (profile != null) {
-        final hasName = profile.name.isNotEmpty;
+        final hasName = profile.displayName.isNotEmpty;
         final hasGender = profile.gender.isNotEmpty;
         final hasPhotos = profile.photos.isNotEmpty;
         profileComplete = profile.profileSetupComplete || (hasName && hasGender && hasPhotos);
@@ -66,15 +67,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
       
-      // If authenticated and on home, trust the splash screen's decision
-      // Only redirect away from home if profile is definitely null (not just loading)
-      if (isAuthenticated && isOnHome && profile == null && !userProfile.isLoading) {
-        debugPrint('Router: On home but no profile found, redirecting to onboarding');
-        return '/onboarding/setup';
+      // If authenticated and on home/settings, NEVER redirect away
+      // The splash screen already validated the profile before navigating here
+      if (isAuthenticated && (isOnHome || isOnSettings)) {
+        debugPrint('Router: On home/settings, trusting splash screen decision');
+        return null;
       }
       
-      // If authenticated but profile incomplete and not on home, redirect to onboarding
-      if (isAuthenticated && !profileComplete && !isOnOnboarding && !isOnAuthPage && !isOnHome) {
+      // If authenticated but profile incomplete, redirect to onboarding
+      // Only if NOT on home, settings, onboarding, or auth pages
+      if (isAuthenticated && !profileComplete && !isOnOnboarding && !isOnAuthPage && !isOnHome && !isOnSettings) {
         debugPrint('Router: Profile incomplete, redirecting to onboarding');
         return '/onboarding/setup';
       }

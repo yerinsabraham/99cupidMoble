@@ -456,26 +456,18 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
               ),
             ),
 
-            // Action Buttons - Premium Style
+            // Action Buttons - Simplified and cleaner like web version
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Rewind Button (Small)
-                  _buildSmallActionButton(
-                    icon: Icons.replay_rounded,
-                    color: const Color(0xFFFFB800),
-                    onPressed: () {
-                      // Rewind functionality
-                    },
-                  ),
-
                   // Pass Button
                   _buildActionButton(
                     icon: Icons.close_rounded,
                     color: const Color(0xFFFF6B6B),
                     gradient: const [Color(0xFFFF6B6B), Color(0xFFEE5A5A)],
+                    size: 64,
                     onPressed: () {
                       if (_currentIndex < _profiles.length) {
                         _handleSwipe(_profiles[_currentIndex].uid, false);
@@ -483,7 +475,9 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                     },
                   ),
 
-                  // Super Like Button
+                  const SizedBox(width: 24),
+
+                  // Super Like/Star Button
                   _buildActionButton(
                     icon: Icons.star_rounded,
                     color: const Color(0xFF00D4FF),
@@ -496,24 +490,18 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                     },
                   ),
 
+                  const SizedBox(width: 24),
+
                   // Like Button
                   _buildActionButton(
                     icon: Icons.favorite_rounded,
                     color: AppColors.cupidPink,
                     gradient: const [Color(0xFFFF6B9D), Color(0xFFFF5FA8)],
+                    size: 64,
                     onPressed: () {
                       if (_currentIndex < _profiles.length) {
                         _handleSwipe(_profiles[_currentIndex].uid, true);
                       }
-                    },
-                  ),
-
-                  // Boost Button (Small)
-                  _buildSmallActionButton(
-                    icon: Icons.bolt_rounded,
-                    color: const Color(0xFFAA5DFF),
-                    onPressed: () {
-                      // Boost functionality
                     },
                   ),
                 ],
@@ -563,32 +551,6 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
           ),
           child: Icon(icon, color: color, size: size * 0.5),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSmallActionButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Icon(icon, color: color, size: 22),
       ),
     );
   }

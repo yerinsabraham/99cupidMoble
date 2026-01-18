@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// UserModel - Represents a user in Firestore
 /// Mirrors the web app UserModel exactly for data consistency
@@ -124,8 +125,14 @@ class UserModel {
 
   /// Create UserModel from Firestore document
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return UserModel.fromMap(data);
+    try {
+      final data = doc.data() as Map<String, dynamic>;
+      return UserModel.fromMap(data);
+    } catch (e) {
+      debugPrint('❌ Error parsing user ${doc.id}: $e');
+      debugPrint('Data: ${doc.data()}');
+      rethrow;
+    }
   }
 
   /// Create UserModel from Map
@@ -133,16 +140,16 @@ class UserModel {
     return UserModel(
       uid: data['uid'] ?? '',
       email: data['email'] ?? '',
-      displayName: data['displayName'] ?? '',
-      photoURL: data['photoURL'],
-      photos: List<String>.from(data['photos'] ?? []),
-      bio: data['bio'] ?? '',
-      age: data['age'],
-      gender: data['gender'] ?? '',
-      location: data['location'] ?? '',
-      interests: List<String>.from(data['interests'] ?? []),
-      job: data['job'],
-      education: data['education'],
+      displayName: data['displayName'] ?? data['name'] ?? '',
+      photoURL: data['photoURL'] is String ? data['photoURL'] : null,
+      photos: _parseStringList(data['photos']),
+      bio: data['bio'] is String ? data['bio'] : '',
+      age: data['age'] is int ? data['age'] : null,
+      gender: data['gender'] is String ? data['gender'] : '',
+      location: data['location'] is String ? data['location'] : '',
+      interests: _parseStringList(data['interests']),
+      job: data['job'] is String ? data['job'] : null,
+      education: data['education'] is String ? data['education'] : null,
       isVerifiedAccount: data['isVerifiedAccount'] ?? false,
       isVerified: data['isVerified'] ?? false,
       isPhoneVerified: data['isPhoneVerified'] ?? false,
@@ -164,16 +171,27 @@ class UserModel {
       reportedBy: List<String>.from(data['reportedBy'] ?? []),
       isAdmin: data['isAdmin'] ?? false,
       accountStatus: data['accountStatus'] ?? 'active',
-      createdAt: data['createdAt'] != null
-          ? DateTime.parse(data['createdAt'])
-          : DateTime.now(),
-      updatedAt: data['updatedAt'] != null
-          ? DateTime.parse(data['updatedAt'])
-          : DateTime.now(),
-      lastActiveAt: data['lastActiveAt'] != null
-          ? DateTime.parse(data['lastActiveAt'])
-          : DateTime.now(),
+      createdAt: _parseTimestamp(data['createdAt']) ?? DateTime.now(),
+      updatedAt: _parseTimestamp(data['updatedAt']) ?? DateTime.now(),
+      lastActiveAt: _parseTimestamp(data['lastActiveAt']) ?? DateTime.now(),
     );
+  }
+
+  /// Parse Timestamp or String to DateTime
+  static DateTime? _parseTimestamp(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.parse(value);
+    return null;
+  }
+
+  /// Safely parse a list of strings from dynamic data
+  static List<String> _parseStringList(dynamic value) {
+    if (value == null) return [];
+    if (value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+    return [];
   }
 
   /// Create UserModel from Firebase Auth user

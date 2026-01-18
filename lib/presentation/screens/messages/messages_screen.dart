@@ -38,6 +38,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         .collection(FirebaseCollections.chats)
         .where('participants', arrayContains: currentUser.uid)
         .snapshots()
+        .handleError((error) {
+          debugPrint('Error loading chats: $error');
+          return null;
+        })
         .map((snapshot) {
       final chats = snapshot.docs
           .map((doc) => ChatModel.fromFirestore(doc))
@@ -51,6 +55,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       });
 
       return chats;
+    }).handleError((error) {
+      debugPrint('Error mapping chats: $error');
+      return <ChatModel>[];
     });
   }
 
@@ -116,10 +123,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     return const Center(child: LoadingIndicator());
                   }
 
+                  // Handle errors silently - show empty state instead
                   if (snapshot.hasError) {
-                    return Center(
-                      child: Text('Error: ${snapshot.error}'),
-                    );
+                    debugPrint('Chat stream error: ${snapshot.error}');
                   }
 
                   final chats = snapshot.data ?? [];
