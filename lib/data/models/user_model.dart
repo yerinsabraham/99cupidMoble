@@ -12,13 +12,14 @@ class UserModel {
   final String bio;
   final int? age;
   final String gender;
+  final String lookingFor;
   final String location;
   final List<String> interests;
-  
+
   // Profile details
   final String? job;
   final String? education;
-  
+
   // Verification and account status
   final bool isVerifiedAccount;
   final bool isVerified;
@@ -26,7 +27,7 @@ class UserModel {
   final bool isPhotoVerified;
   final bool isIDVerified;
   final bool profileSetupComplete;
-  
+
   // Subscription info
   final bool hasActiveSubscription;
   final String subscriptionStatus;
@@ -34,16 +35,16 @@ class UserModel {
   final DateTime? subscriptionEndDate;
   final String? stripeCustomerId;
   final String? subscriptionId;
-  
+
   // Block and report
   final List<String> blockedUsers;
   final List<String> blockedByUsers;
   final List<String> reportedBy;
-  
+
   // Admin fields
   final bool isAdmin;
   final String accountStatus;
-  
+
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime lastActiveAt;
@@ -57,6 +58,7 @@ class UserModel {
     this.bio = '',
     this.age,
     this.gender = '',
+    this.lookingFor = 'everyone',
     this.location = '',
     this.interests = const [],
     this.job,
@@ -81,9 +83,9 @@ class UserModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastActiveAt,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now(),
-        lastActiveAt = lastActiveAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now(),
+       lastActiveAt = lastActiveAt ?? DateTime.now();
 
   /// Convert to Firestore format
   Map<String, dynamic> toFirestore() {
@@ -96,6 +98,7 @@ class UserModel {
       'bio': bio,
       'age': age,
       'gender': gender,
+      'lookingFor': lookingFor,
       'location': location,
       'interests': interests,
       'job': job,
@@ -146,6 +149,9 @@ class UserModel {
       bio: data['bio'] is String ? data['bio'] : '',
       age: data['age'] is int ? data['age'] : null,
       gender: data['gender'] is String ? data['gender'] : '',
+      lookingFor: data['lookingFor'] is String
+          ? data['lookingFor']
+          : 'everyone',
       location: data['location'] is String ? data['location'] : '',
       interests: _parseStringList(data['interests']),
       job: data['job'] is String ? data['job'] : null,
@@ -222,6 +228,7 @@ class UserModel {
     String? bio,
     int? age,
     String? gender,
+    String? lookingFor,
     String? location,
     List<String>? interests,
     String? job,
@@ -256,6 +263,7 @@ class UserModel {
       bio: bio ?? this.bio,
       age: age ?? this.age,
       gender: gender ?? this.gender,
+      lookingFor: lookingFor ?? this.lookingFor,
       location: location ?? this.location,
       interests: interests ?? this.interests,
       job: job ?? this.job,
@@ -266,9 +274,11 @@ class UserModel {
       isPhotoVerified: isPhotoVerified ?? this.isPhotoVerified,
       isIDVerified: isIDVerified ?? this.isIDVerified,
       profileSetupComplete: profileSetupComplete ?? this.profileSetupComplete,
-      hasActiveSubscription: hasActiveSubscription ?? this.hasActiveSubscription,
+      hasActiveSubscription:
+          hasActiveSubscription ?? this.hasActiveSubscription,
       subscriptionStatus: subscriptionStatus ?? this.subscriptionStatus,
-      subscriptionStartDate: subscriptionStartDate ?? this.subscriptionStartDate,
+      subscriptionStartDate:
+          subscriptionStartDate ?? this.subscriptionStartDate,
       subscriptionEndDate: subscriptionEndDate ?? this.subscriptionEndDate,
       stripeCustomerId: stripeCustomerId ?? this.stripeCustomerId,
       subscriptionId: subscriptionId ?? this.subscriptionId,

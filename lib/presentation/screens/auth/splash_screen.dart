@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/firebase_collections.dart';
+import '../../widgets/heart_loader.dart';
 
 /// Splash Screen - Initial loading screen with logo
 class SplashScreen extends ConsumerStatefulWidget {
@@ -31,9 +32,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // Get current user directly from Firebase Auth (not from provider)
     // This ensures we get the actual current state after app reinstall
     final User? currentUser = FirebaseAuth.instance.currentUser;
-    
+
     debugPrint('Splash: currentUser = ${currentUser?.uid}');
-    
+
     // Navigate based on auth state
     if (currentUser != null) {
       // Fetch user profile directly from Firestore to check profileSetupComplete
@@ -42,26 +43,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             .collection(FirebaseCollections.users)
             .doc(currentUser.uid)
             .get();
-        
+
         if (!mounted) return;
-        
+
         if (userDoc.exists) {
           final data = userDoc.data();
           debugPrint('Splash: User doc exists, data = $data');
-          
+
           // Check if profile is complete - either by explicit flag OR by having essential fields
           final profileComplete = data?['profileSetupComplete'] ?? false;
-          final hasName = data?['name'] != null && (data?['name'] as String).isNotEmpty;
-          final hasBirthday = data?['dateOfBirth'] != null || data?['birthday'] != null;
+          final hasName =
+              data?['name'] != null && (data?['name'] as String).isNotEmpty;
+          final hasBirthday =
+              data?['dateOfBirth'] != null || data?['birthday'] != null;
           final hasGender = data?['gender'] != null;
-          final hasPhotos = data?['photos'] != null && (data?['photos'] as List).isNotEmpty;
-          
+          final hasPhotos =
+              data?['photos'] != null && (data?['photos'] as List).isNotEmpty;
+
           // Consider profile complete if flag is true OR if essential fields exist
-          final isProfileUsable = profileComplete || (hasName && hasBirthday && hasGender && hasPhotos);
-          
-          debugPrint('Splash: profileComplete=$profileComplete, hasName=$hasName, hasBirthday=$hasBirthday, hasGender=$hasGender, hasPhotos=$hasPhotos');
+          final isProfileUsable =
+              profileComplete ||
+              (hasName && hasBirthday && hasGender && hasPhotos);
+
+          debugPrint(
+            'Splash: profileComplete=$profileComplete, hasName=$hasName, hasBirthday=$hasBirthday, hasGender=$hasGender, hasPhotos=$hasPhotos',
+          );
           debugPrint('Splash: isProfileUsable=$isProfileUsable');
-          
+
           if (isProfileUsable) {
             // User has a usable profile, go to home
             // Also update profileSetupComplete to true if it wasn't
@@ -105,17 +113,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               child: Center(
                 child: Image.asset(
                   AppAssets.logo,
-                  width: 150,
+                  width: 120,
                   fit: BoxFit.contain,
                 ),
               ),
             ),
-            
+
             // App name at bottom
             Padding(
               padding: const EdgeInsets.only(bottom: 48.0),
               child: Text(
-                '99cupid',
+                '99Cupid',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,

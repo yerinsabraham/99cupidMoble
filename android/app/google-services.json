@@ -50,6 +50,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "302226954210-2v5vp4r6kr4g6uc4o2ft07n9kn55qu30.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cupid99.cupid_99",
+            "certificate_hash": "7d43d353a9fcf104396c5f229f01952eb6c808a2"
+          }
+        },
+        {
           "client_id": "302226954210-7tid7scm7q0duh4pdkj2094o8f8esmn7.apps.googleusercontent.com",
           "client_type": 3
         }

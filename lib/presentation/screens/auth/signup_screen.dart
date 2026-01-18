@@ -63,7 +63,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      await ref.read(authNotifierProvider.notifier).signUpWithEmail(
+      await ref
+          .read(authNotifierProvider.notifier)
+          .signUpWithEmail(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
@@ -112,9 +114,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -126,35 +126,28 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Logo
-                    Image.asset(
-                      AppAssets.logo,
-                      width: 120,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 16),
+                    Image.asset(AppAssets.logo, width: 50, fit: BoxFit.contain),
+                    const SizedBox(height: 10),
 
                     // Title
                     Text(
                       'Create Account',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: AppColors.deepPlum,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
                     // Subtitle
                     Text(
                       'Find your perfect match',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.grey600,
-                      ),
+                      style: TextStyle(fontSize: 14, color: AppColors.grey600),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 28),
 
                     // Email Field
                     AppTextField(
@@ -263,7 +256,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
                     // Google Sign Up Button
                     OutlinedButton.icon(
-                      onPressed: authState.isLoading ? null : _handleGoogleSignUp,
+                      onPressed: authState.isLoading
+                          ? null
+                          : _handleGoogleSignUp,
                       icon: Image.asset(
                         AppAssets.googleIcon,
                         height: 24,

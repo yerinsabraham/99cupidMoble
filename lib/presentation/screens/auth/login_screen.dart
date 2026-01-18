@@ -60,7 +60,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      await ref.read(authNotifierProvider.notifier).signInWithEmail(
+      await ref
+          .read(authNotifierProvider.notifier)
+          .signInWithEmail(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
@@ -99,9 +101,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -113,35 +113,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Logo
-                    Image.asset(
-                      AppAssets.logo,
-                      width: 150,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // App Name
-                    Text(
-                      AppStrings.appName,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.deepPlum,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    Image.asset(AppAssets.logo, width: 50, fit: BoxFit.contain),
+                    const SizedBox(height: 10),
 
                     // Tagline
                     Text(
                       AppStrings.appTagline,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.grey600,
-                      ),
+                      style: TextStyle(fontSize: 14, color: AppColors.grey600),
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
 
                     // Email Field
                     AppTextField(
@@ -235,7 +216,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     // Google Sign In Button
                     OutlinedButton.icon(
-                      onPressed: authState.isLoading ? null : _handleGoogleLogin,
+                      onPressed: authState.isLoading
+                          ? null
+                          : _handleGoogleLogin,
                       icon: Image.asset(
                         AppAssets.googleIcon,
                         height: 24,

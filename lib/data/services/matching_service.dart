@@ -16,20 +16,25 @@ class MatchingService {
   }) async {
     try {
       debugPrint('🔍 MatchingService: Getting matches for user $userId');
-      
+
       // Get current user profile
       final userDoc = await _firestore
           .collection(FirebaseCollections.users)
           .doc(userId)
           .get();
-      
+
       if (!userDoc.exists) {
         debugPrint('❌ Current user document not found');
         return [];
       }
-      
+
       final currentUser = UserModel.fromFirestore(userDoc);
       debugPrint('✅ Current user loaded: ${currentUser.displayName}');
+      debugPrint('👤 Current user looking for: ${currentUser.lookingFor}');
+
+      // Get already swiped user IDs
+      final swipedUsers = await _getSwipedUserIds(userId);
+      debugPrint('📝 Already swiped on ${swipedUsers.length} users');
 
       // Get all users with complete profiles
       var query = _firestore
@@ -37,27 +42,50 @@ class MatchingService {
           .where('profileSetupComplete', isEqualTo: true);
 
       final snapshot = await query.get();
-      debugPrint('📊 Found ${snapshot.docs.length} users with profileSetupComplete=true');
-      
+      debugPrint(
+        '📊 Found ${snapshot.docs.length} users with profileSetupComplete=true',
+      );
+
       final profiles = <UserModel>[];
 
       for (final doc in snapshot.docs) {
         final profile = UserModel.fromFirestore(doc);
-        
+
         // Exclude self
         if (profile.uid == userId) {
           debugPrint('⏭️  Skipping self: ${profile.displayName}');
           continue;
         }
-        
-        // Apply basic filters
-        if (filters != null) {
-          if (!_meetsFilters(profile, filters)) {
-            debugPrint('⏭️  Skipping ${profile.displayName} - doesn\'t meet filters');
+
+        // Exclude already swiped users
+        if (swipedUsers.contains(profile.uid)) {
+          debugPrint('⏭️  Skipping ${profile.displayName} - already swiped');
+          continue;
+        }
+
+        // Filter by gender preference
+        if (currentUser.lookingFor != 'everyone') {
+          final targetGender = currentUser.lookingFor == 'men'
+              ? 'male'
+              : 'female';
+          if (profile.gender.toLowerCase() != targetGender) {
+            debugPrint(
+              '⏭️  Skipping ${profile.displayName} - gender mismatch (looking for $targetGender, found ${profile.gender})',
+            );
             continue;
           }
         }
-        
+
+        // Apply basic filters
+        if (filters != null) {
+          if (!_meetsFilters(profile, filters)) {
+            debugPrint(
+              '⏭️  Skipping ${profile.displayName} - doesn\'t meet filters',
+            );
+            continue;
+          }
+        }
+
         debugPrint('✅ Adding profile: ${profile.displayName}');
         profiles.add(profile);
       }
@@ -80,6 +108,38 @@ class MatchingService {
     } catch (e) {
       debugPrint('❌ Error getting matches: $e');
       return [];
+    }
+  }
+
+  /// Get IDs of users already swiped on (likes + passes)
+  Future<Set<String>> _getSwipedUserIds(String userId) async {
+    try {
+      final swipedIds = <String>{};
+
+      // Get likes
+      final likesSnapshot = await _firestore
+          .collection('likes')
+          .where('fromUserId', isEqualTo: userId)
+          .get();
+
+      for (final doc in likesSnapshot.docs) {
+        swipedIds.add(doc.data()['toUserId'] as String);
+      }
+
+      // Get passes (swipes)
+      final swipesSnapshot = await _firestore
+          .collection('swipes')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      for (final doc in swipesSnapshot.docs) {
+        swipedIds.add(doc.data()['targetUserId'] as String);
+      }
+
+      return swipedIds;
+    } catch (e) {
+      debugPrint('❌ Error getting swiped user IDs: $e');
+      return {};
     }
   }
 
@@ -126,8 +186,8 @@ class MatchingService {
     }
 
     // Gender filter
-    if (filters['gender'] != null && 
-        filters['gender'] != 'everyone' && 
+    if (filters['gender'] != null &&
+        filters['gender'] != 'everyone' &&
         filters['gender'] != profile.gender) {
       return false;
     }

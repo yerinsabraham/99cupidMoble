@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,7 +8,7 @@ import '../../../data/models/user_model.dart';
 import '../../../data/services/matching_service.dart';
 import '../../../data/services/swipe_service.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../widgets/swipe/swipe_card.dart';
+import '../../widgets/swipe/swipe_card_new.dart';
 
 class HomeSwipeScreen extends ConsumerStatefulWidget {
   const HomeSwipeScreen({super.key});
@@ -23,7 +24,7 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
   List<UserModel> _profiles = [];
   bool _isLoading = true;
   int _currentIndex = 0;
-  
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -89,7 +90,7 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
           currentUserData,
           targetUserData,
         );
-        
+
         if (result['match'] != null) {
           _showMatchDialog(result['match']);
         }
@@ -111,6 +112,7 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
   }
 
   void _showMatchDialog(Map<String, dynamic> match) {
+    HapticFeedback.heavyImpact(); // Celebrate the match!
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -119,10 +121,7 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
       transitionDuration: const Duration(milliseconds: 400),
       pageBuilder: (context, animation, secondaryAnimation) {
         return ScaleTransition(
-          scale: CurvedAnimation(
-            parent: animation,
-            curve: Curves.elasticOut,
-          ),
+          scale: CurvedAnimation(parent: animation, curve: Curves.elasticOut),
           child: Dialog(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -159,11 +158,7 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                         color: Colors.white.withValues(alpha: 0.3),
                         size: 120,
                       ),
-                      const Icon(
-                        Icons.favorite,
-                        color: Colors.white,
-                        size: 80,
-                      ),
+                      const Icon(Icons.favorite, color: Colors.white, size: 80),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -194,7 +189,10 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            side: const BorderSide(color: Colors.white, width: 2),
+                            side: const BorderSide(
+                              color: Colors.white,
+                              width: 2,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -256,11 +254,18 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [AppColors.cupidPink, AppColors.cupidPink.withValues(alpha: 0.7)],
+                      colors: [
+                        AppColors.cupidPink,
+                        AppColors.cupidPink.withValues(alpha: 0.7),
+                      ],
                     ),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.favorite, color: Colors.white, size: 40),
+                  child: const Icon(
+                    Icons.favorite,
+                    color: Colors.white,
+                    size: 40,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -287,37 +292,58 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.warmBlush,
-                        AppColors.warmBlush.withValues(alpha: 0.5),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.explore_outlined,
-                    size: 80,
-                    color: AppColors.cupidPink.withValues(alpha: 0.8),
-                  ),
+                // Animated heart illustration
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.elasticOut,
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        padding: const EdgeInsets.all(40),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.warmBlush,
+                              AppColors.warmBlush.withValues(alpha: 0.5),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(
+                              Icons.favorite,
+                              size: 100,
+                              color: AppColors.cupidPink.withValues(alpha: 0.3),
+                            ),
+                            const Icon(
+                              Icons.check_circle,
+                              size: 50,
+                              color: AppColors.cupidPink,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 32),
                 const Text(
-                  'No more profiles nearby',
+                  'You\'re all caught up!',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: AppColors.deepPlum,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'You\'ve seen everyone for now.\nExpand your distance or check back soon!',
+                  'No new profiles nearby right now.\nCheck back soon or expand your search!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -325,7 +351,39 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                     height: 1.5,
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 24),
+                // Stats card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildStatItem(
+                        Icons.favorite,
+                        'Liked',
+                        '${_currentIndex}',
+                      ),
+                      const SizedBox(width: 32),
+                      _buildStatItem(
+                        Icons.visibility,
+                        'Viewed',
+                        '${_currentIndex}',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
                 Container(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
@@ -342,7 +400,10 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                   ),
                   child: ElevatedButton.icon(
                     onPressed: _loadProfiles,
-                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: Colors.white,
+                    ),
                     label: const Text(
                       'Refresh Profiles',
                       style: TextStyle(
@@ -354,7 +415,10 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -386,7 +450,11 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.favorite, color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.favorite,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       const Text(
@@ -416,7 +484,10 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                         ),
                         child: IconButton(
                           onPressed: () => context.push('/settings'),
-                          icon: const Icon(Icons.tune_rounded, color: AppColors.deepPlum),
+                          icon: const Icon(
+                            Icons.tune_rounded,
+                            color: AppColors.deepPlum,
+                          ),
                         ),
                       ),
                     ],
@@ -425,133 +496,61 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
               ),
             ),
 
-            // Card Stack
+            // Card Stack - Fill more screen space
             Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Show next card behind
-                  if (_currentIndex < _profiles.length - 1)
-                    Positioned(
-                      top: 20,
-                      child: Transform.scale(
-                        scale: 0.95,
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Show next card behind
+                    if (_currentIndex < _profiles.length - 1)
+                      Transform.scale(
+                        scale: 0.92,
                         child: Opacity(
                           opacity: 0.5,
                           child: SwipeCard(
+                            key: ValueKey(_profiles[_currentIndex + 1].uid),
                             profile: _profiles[_currentIndex + 1],
                             onSwipe: (_, __) {},
                           ),
                         ),
                       ),
-                    ),
 
-                  // Current card
-                  if (_currentIndex < _profiles.length)
-                    SwipeCard(
-                      profile: _profiles[_currentIndex],
-                      onSwipe: _handleSwipe,
-                    ),
-                ],
+                    // Current card
+                    if (_currentIndex < _profiles.length)
+                      SwipeCard(
+                        key: ValueKey(_profiles[_currentIndex].uid),
+                        profile: _profiles[_currentIndex],
+                        onSwipe: _handleSwipe,
+                      ),
+                  ],
+                ),
               ),
             ),
 
-            // Action Buttons - Simplified and cleaner like web version
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Pass Button
-                  _buildActionButton(
-                    icon: Icons.close_rounded,
-                    color: const Color(0xFFFF6B6B),
-                    gradient: const [Color(0xFFFF6B6B), Color(0xFFEE5A5A)],
-                    size: 64,
-                    onPressed: () {
-                      if (_currentIndex < _profiles.length) {
-                        _handleSwipe(_profiles[_currentIndex].uid, false);
-                      }
-                    },
-                  ),
-
-                  const SizedBox(width: 24),
-
-                  // Super Like/Star Button
-                  _buildActionButton(
-                    icon: Icons.star_rounded,
-                    color: const Color(0xFF00D4FF),
-                    gradient: const [Color(0xFF00D4FF), Color(0xFF00B4D8)],
-                    size: 56,
-                    onPressed: () {
-                      if (_currentIndex < _profiles.length) {
-                        _handleSwipe(_profiles[_currentIndex].uid, true);
-                      }
-                    },
-                  ),
-
-                  const SizedBox(width: 24),
-
-                  // Like Button
-                  _buildActionButton(
-                    icon: Icons.favorite_rounded,
-                    color: AppColors.cupidPink,
-                    gradient: const [Color(0xFFFF6B9D), Color(0xFFFF5FA8)],
-                    size: 64,
-                    onPressed: () {
-                      if (_currentIndex < _profiles.length) {
-                        _handleSwipe(_profiles[_currentIndex].uid, true);
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
+            // Small bottom padding
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-    List<Color>? gradient,
-    double size = 64,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: color.withValues(alpha: 0.2),
-              width: 2,
-            ),
+  Widget _buildStatItem(IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: AppColors.cupidPink, size: 28),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.deepPlum,
           ),
-          child: Icon(icon, color: color, size: size * 0.5),
         ),
-      ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+      ],
     );
   }
 }
