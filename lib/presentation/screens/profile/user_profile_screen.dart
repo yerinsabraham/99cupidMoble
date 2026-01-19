@@ -757,7 +757,9 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                   maxScale: 4.0,
                   child: Image.network(
                     widget.images[index],
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Center(

@@ -28,6 +28,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   ChatModel? _chat;
   bool _isLoading = true;
   bool _useMockData = true;
+  bool _hasText = false;
 
   // Mock conversation data
   final List<Map<String, dynamic>> _mockMessages = [
@@ -47,6 +48,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    _messageController.addListener(() {
+      final hasText = _messageController.text.trim().isNotEmpty;
+      if (_hasText != hasText) {
+        setState(() => _hasText = hasText);
+      }
+    });
     _loadMockDataSetting();
     if (widget.chatId.startsWith('mock_')) {
       setState(() {
@@ -72,7 +79,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error loading mock data setting: $e');
+      // Permission denied or other errors - use default mock data
+      debugPrint('Using default mock data setting due to: $e');
+      if (mounted) {
+        setState(() => _useMockData = true);
+      }
     }
   }
 
@@ -133,9 +144,153 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         });
   }
 
+  Future<void> _showChatOptionsMenu(BuildContext context) async {
+    final isMock = widget.chatId.startsWith('mock_');
+    
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isMock) ...[  
+              ListTile(
+                leading: const Icon(IconlyLight.profile, color: AppColors.cupidPink),
+                title: const Text('View Profile'),
+                onTap: () {
+                  Navigator.pop(context);
+                  final otherUserId = _chat?.getOtherUserId(
+                    FirebaseAuth.instance.currentUser?.uid ?? '',
+                  );
+                  if (otherUserId != null) {
+                    context.push('/profile/$otherUserId');
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.orange),
+                title: const Text('Block User'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showBlockUserDialog(context);
+                },
+              ),
+            ],
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Delete Chat', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteChatDialog(context);
+              },
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showBlockUserDialog(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Block User'),
+        content: const Text('Are you sure you want to block this user? You will no longer receive messages from them.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      // TODO: Implement block user functionality
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User blocked successfully')),
+      );
+    }
+  }
+
+  Future<void> _showDeleteChatDialog(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Chat'),
+        content: const Text('Are you sure you want to delete this conversation? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        if (!widget.chatId.startsWith('mock_')) {
+          await _firestore
+              .collection(FirebaseCollections.chats)
+              .doc(widget.chatId)
+              .delete();
+        }
+        if (mounted) {
+          context.pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Chat deleted')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting chat: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
+
+    // Don't send real messages for mock chats
+    if (widget.chatId.startsWith('mock_')) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This is a mock chat. Real messaging requires actual user chats.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      _messageController.clear();
+      return;
+    }
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
@@ -334,9 +489,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           color: AppColors.deepPlum,
                           size: 20,
                         ),
-                        onPressed: () {
-                          // Show options menu
-                        },
+                        onPressed: () => _showChatOptionsMenu(context),
                       ),
                     ),
                   ],
@@ -601,7 +754,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             const SizedBox(width: 12),
 
-            // Microphone button
+            // Send or Microphone button
             Container(
               width: 44,
               height: 44,
@@ -611,9 +764,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
               child: IconButton(
                 padding: EdgeInsets.zero,
-                icon: const Icon(Icons.mic, color: Colors.white, size: 22),
+                icon: Icon(
+                  _hasText ? Icons.send : Icons.mic,
+                  color: Colors.white,
+                  size: 22,
+                ),
                 onPressed: () {
-                  // Handle voice message
+                  if (_hasText) {
+                    _sendMessage();
+                  } else {
+                    // Handle voice message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Voice messaging not yet implemented'),
+                      ),
+                    );
+                  }
                 },
               ),
             ),

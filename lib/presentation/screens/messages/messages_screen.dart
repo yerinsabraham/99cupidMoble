@@ -45,8 +45,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error loading mock data setting: $e');
-      // Keep default value on error
+      // Permission denied or other errors - use default mock data
+      debugPrint('Using default mock data setting due to: $e');
+      if (mounted) {
+        setState(() => _useMockData = true);
+      }
     }
   }
 
@@ -114,6 +117,273 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     super.dispose();
   }
 
+  Future<void> _showSearchUsersDialog(BuildContext context) async {
+    final TextEditingController searchController = TextEditingController();
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    
+    if (currentUserId == null) return;
+
+    await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          constraints: const BoxConstraints(maxHeight: 500),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Search Chats',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.deepPlum,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: AppColors.deepPlum),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search by name...',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  prefixIcon: const Icon(IconlyLight.search, color: AppColors.cupidPink),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.cupidPink, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                onChanged: (value) {
+                  // Trigger rebuild
+                  (context as Element).markNeedsBuild();
+                },
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: _useMockData
+                    ? _buildMockSearchList(searchController)
+                    : _buildRealSearchList(searchController, currentUserId),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMockSearchList(TextEditingController searchController) {
+    final searchQuery = searchController.text.toLowerCase();
+    final filteredChats = _mockChats.where((chat) {
+      final userName = (chat['userName'] as String).toLowerCase();
+      return searchQuery.isEmpty || userName.contains(searchQuery);
+    }).toList();
+
+    if (filteredChats.isEmpty) {
+      return Center(
+        child: Text(
+          'No matching chats',
+          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      itemCount: filteredChats.length,
+      itemBuilder: (context, index) {
+        final chat = filteredChats[index];
+        final userName = chat['userName'] as String;
+        final userPhoto = chat['userPhoto'] as String;
+        final chatId = chat['id'] as String;
+
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: NetworkImage(userPhoto),
+            backgroundColor: AppColors.warmBlush,
+          ),
+          title: Text(
+            userName,
+            style: const TextStyle(
+              color: AppColors.deepPlum,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+          trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/chat/mock_$chatId');
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildRealSearchList(TextEditingController searchController, String currentUserId) {
+    return StreamBuilder<List<ChatModel>>(
+      stream: _getChatsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: LoadingIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Text(
+              'No chats yet',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
+          );
+        }
+
+        final searchQuery = searchController.text.toLowerCase();
+        final chats = snapshot.data!;
+        final filteredChats = chats.where((chat) {
+          final otherUserName = chat.getOtherUserName(currentUserId).toLowerCase();
+          return searchQuery.isEmpty || otherUserName.contains(searchQuery);
+        }).toList();
+
+        if (filteredChats.isEmpty) {
+          return Center(
+            child: Text(
+              'No matching chats',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          itemCount: filteredChats.length,
+          itemBuilder: (context, index) {
+            final chat = filteredChats[index];
+            final otherUserName = chat.getOtherUserName(currentUserId);
+            final otherUserPhoto = chat.getOtherUserPhoto(currentUserId);
+
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundImage: otherUserPhoto != null
+                    ? NetworkImage(otherUserPhoto)
+                    : null,
+                backgroundColor: AppColors.warmBlush,
+                child: otherUserPhoto == null
+                    ? Text(
+                        otherUserName[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: AppColors.cupidPink,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+              ),
+              title: Text(
+                otherUserName,
+                style: const TextStyle(
+                  color: AppColors.deepPlum,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/chat/${chat.id}');
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _createOrOpenChat(String otherUserId, String otherUserName, String? otherUserPhoto) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      // Check if chat already exists
+      final existingChats = await _firestore
+          .collection(FirebaseCollections.chats)
+          .where('participants', arrayContains: currentUser.uid)
+          .get();
+
+      String? existingChatId;
+      for (var doc in existingChats.docs) {
+        final participants = List<String>.from(doc.data()['participants'] ?? []);
+        if (participants.contains(otherUserId)) {
+          existingChatId = doc.id;
+          break;
+        }
+      }
+
+      if (existingChatId != null) {
+        // Open existing chat
+        if (mounted) {
+          context.push('/chat/$existingChatId');
+        }
+      } else {
+        // Create new chat
+        final chatData = {
+          'participants': [currentUser.uid, otherUserId],
+          'participantNames': {
+            currentUser.uid: currentUser.displayName ?? 'User',
+            otherUserId: otherUserName,
+          },
+          'participantPhotos': {
+            currentUser.uid: currentUser.photoURL,
+            otherUserId: otherUserPhoto,
+          },
+          'lastMessage': '',
+          'lastMessageAt': FieldValue.serverTimestamp(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'unreadCount': {currentUser.uid: 0, otherUserId: 0},
+        };
+
+        final chatDoc = await _firestore
+            .collection(FirebaseCollections.chats)
+            .add(chatData);
+
+        if (mounted) {
+          context.push('/chat/${chatDoc.id}');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error creating/opening chat: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Stream<List<ChatModel>> _getChatsStream() {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
@@ -165,16 +435,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   AppColors.cupidPink.withOpacity(0.9),
                 ],
               ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
             ),
             child: SafeArea(
               bottom: false,
               child: Column(
                 children: [
-                  // Header Row with back button and search
+                  // Header Row with title and search
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -183,25 +449,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new,
-                              color: AppColors.deepPlum,
-                              size: 18,
-                            ),
-                            onPressed: () => Navigator.of(context).canPop()
-                                ? Navigator.of(context).pop()
-                                : null,
-                          ),
-                        ),
                         const Text(
                           'Chat',
                           style: TextStyle(
@@ -224,9 +471,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                               color: AppColors.deepPlum,
                               size: 20,
                             ),
-                            onPressed: () {
-                              // Show search dialog or expand search
-                            },
+                            onPressed: () => _showSearchUsersDialog(context),
                           ),
                         ),
                       ],
@@ -235,8 +480,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
                   // Horizontal Scrollable User Avatars
                   Container(
-                    height: 110,
-                    padding: const EdgeInsets.only(top: 8, bottom: 16),
+                    height: 100,
+                    padding: const EdgeInsets.only(top: 6, bottom: 10),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -250,33 +495,34 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                               context.push('/chat/mock_${mock['id']}');
                             },
                             child: Container(
-                              width: 80,
+                              width: 75,
                               margin: const EdgeInsets.only(right: 16),
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
-                                    width: 64,
-                                    height: 64,
+                                    width: 60,
+                                    height: 60,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
                                         color: Colors.white,
-                                        width: 3,
+                                        width: 2.5,
                                       ),
                                     ),
                                     child: CircleAvatar(
-                                      radius: 30,
+                                      radius: 28,
                                       backgroundImage: NetworkImage(
                                         mock['userPhoto'] as String,
                                       ),
                                       backgroundColor: Colors.white,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 5),
                                   Text(
                                     mock['userName'] as String,
                                     style: const TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       color: Colors.white,
                                       fontWeight: FontWeight.w500,
                                     ),

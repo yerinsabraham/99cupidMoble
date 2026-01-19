@@ -458,14 +458,11 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
-                        '99cupid',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.deepPlum,
-                          letterSpacing: -0.5,
-                        ),
+                      Image.asset(
+                        'assets/images/app_logo.png',
+                        width: 120,
+                        height: 40,
+                        fit: BoxFit.contain,
                       ),
                     ],
                   ),
