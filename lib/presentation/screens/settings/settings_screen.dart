@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconly/iconly.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/services/user_account_service.dart';
 import '../../../data/models/user_model.dart';
@@ -21,10 +22,10 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final UserAccountService _accountService = UserAccountService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   bool _isLoading = true;
   UserModel? _profile;
-  
+
   // Settings state
   bool _notifyMatches = true;
   bool _notifyMessages = true;
@@ -40,7 +41,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
@@ -143,15 +144,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to export data')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to export data')));
     }
   }
 
   Future<void> _handleDeleteAccount() async {
     final passwordController = TextEditingController();
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -192,8 +193,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (confirmed == true && passwordController.text.isNotEmpty) {
-      final result = await _accountService.deleteAccount(passwordController.text);
-      
+      final result = await _accountService.deleteAccount(
+        passwordController.text,
+      );
+
       if (result['success'] == true) {
         if (mounted) {
           context.go('/login');
@@ -201,7 +204,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['error'] ?? 'Failed to delete account')),
+            SnackBar(
+              content: Text(result['error'] ?? 'Failed to delete account'),
+            ),
           );
         }
       }
@@ -241,9 +246,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: LoadingIndicator()),
-      );
+      return const Scaffold(body: Center(child: LoadingIndicator()));
     }
 
     return Scaffold(
@@ -285,9 +288,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: 'Manage users, reports, and verifications',
                 onTap: () => context.push('/admin'),
               ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Notifications Section
             _buildSectionHeader('Notifications'),
             _buildSwitchTile(
@@ -295,14 +298,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'New Matches',
               subtitle: 'Get notified when you have a new match',
               value: _notifyMatches,
-              onChanged: (value) => _updateNotificationSetting('matches', value),
+              onChanged: (value) =>
+                  _updateNotificationSetting('matches', value),
             ),
             _buildSwitchTile(
               icon: Icons.chat_bubble_outline,
               title: 'Messages',
               subtitle: 'Get notified when you receive a message',
               value: _notifyMessages,
-              onChanged: (value) => _updateNotificationSetting('messages', value),
+              onChanged: (value) =>
+                  _updateNotificationSetting('messages', value),
             ),
             _buildSwitchTile(
               icon: Icons.thumb_up_outlined,
@@ -311,9 +316,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               value: _notifyLikes,
               onChanged: (value) => _updateNotificationSetting('likes', value),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Privacy Section
             _buildSectionHeader('Privacy'),
             _buildSwitchTile(
@@ -321,14 +326,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Online Status',
               subtitle: 'Show when you are online',
               value: _showOnlineStatus,
-              onChanged: (value) => _updatePrivacySetting('showOnlineStatus', value),
+              onChanged: (value) =>
+                  _updatePrivacySetting('showOnlineStatus', value),
             ),
             _buildSwitchTile(
               icon: Icons.location_on_outlined,
               title: 'Show Distance',
               subtitle: 'Show your distance to other users',
               value: _showDistance,
-              onChanged: (value) => _updatePrivacySetting('showDistance', value),
+              onChanged: (value) =>
+                  _updatePrivacySetting('showDistance', value),
             ),
             _buildSettingsTile(
               icon: Icons.block_outlined,
@@ -336,9 +343,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               subtitle: 'Manage blocked users',
               onTap: () => context.push('/blocked-users'),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Data & Legal Section
             _buildSectionHeader('Data & Legal'),
             _buildSettingsTile(
@@ -359,13 +366,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               subtitle: 'Read our terms of service',
               onTap: () {},
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Danger Zone
             _buildSectionHeader('Danger Zone', color: Colors.red),
             _buildSettingsTile(
-              icon: Icons.logout,
+              icon: IconlyLight.logout,
               title: 'Log Out',
               subtitle: 'Sign out of your account',
               onTap: _handleLogout,
@@ -379,17 +386,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               iconColor: Colors.red,
               textColor: Colors.red,
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // App Version
             Center(
               child: Text(
                 'Version 1.0.0',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
             ),
             const SizedBox(height: 32),
@@ -401,12 +405,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   String _getVerificationStatus() {
     if (_profile == null) return 'Not verified';
-    
+
     final verified = <String>[];
     if (_profile!.isPhoneVerified) verified.add('Phone');
     if (_profile!.isPhotoVerified) verified.add('Photo');
     if (_profile!.isIDVerified) verified.add('ID');
-    
+
     if (verified.isEmpty) return 'Not verified';
     return verified.join(', ') + ' verified';
   }
@@ -458,10 +462,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
         onTap: onTap,
@@ -500,10 +501,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         value: value,
         onChanged: onChanged,

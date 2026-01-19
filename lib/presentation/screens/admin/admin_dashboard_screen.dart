@@ -13,14 +13,15 @@ class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() =>
+      _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
     with SingleTickerProviderStateMixin {
   final AdminService _adminService = AdminService();
   late TabController _tabController;
-  
+
   bool _isLoading = true;
   bool _isAdmin = false;
   Map<String, dynamic> _stats = {};
@@ -43,7 +44,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
 
   Future<void> _checkAdminAndLoadData() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) {
@@ -55,7 +56,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
       }
 
       final isAdmin = await _adminService.isAdmin(currentUser.uid);
-      
+
       if (!isAdmin) {
         setState(() {
           _isAdmin = false;
@@ -89,9 +90,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: LoadingIndicator()),
-      );
+      return const Scaffold(body: Center(child: LoadingIndicator()));
     }
 
     if (!_isAdmin) {
@@ -130,10 +129,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
               const SizedBox(height: 8),
               Text(
                 'You do not have permission to access this page.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
@@ -143,7 +139,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.cupidPink,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -214,7 +213,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Stats Grid
           GridView.count(
             crossAxisCount: 2,
@@ -262,9 +261,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Quick Actions
           const Text(
             'Quick Actions',
@@ -275,7 +274,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
             ),
           ),
           const SizedBox(height: 16),
-          
+
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -297,12 +296,154 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
               ),
             ],
           ),
+
+          const SizedBox(height: 32),
+
+          // Development Settings
+          const Text(
+            'Development Settings',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.deepPlum,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          _buildDevelopmentSettings(),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildDevelopmentSettings() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('appSettings')
+          .doc('development')
+          .snapshots(),
+      builder: (context, snapshot) {
+        final useMockMessages = snapshot.data?.data() != null
+            ? (snapshot.data!.data() as Map<String, dynamic>)['useMockMessages']
+                      as bool? ??
+                  true
+            : true;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.purple.shade200, width: 2),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.developer_mode,
+                      color: Colors.purple.shade600,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Mock Data Control',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.deepPlum,
+                          ),
+                        ),
+                        Text(
+                          'Toggle test data for UI development',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                value: useMockMessages,
+                onChanged: (value) async {
+                  try {
+                    await FirebaseFirestore.instance
+                        .collection('appSettings')
+                        .doc('development')
+                        .set({
+                          'useMockMessages': value,
+                        }, SetOptions(merge: true));
+
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            value
+                                ? 'Mock messages enabled - Restart messages screen to see changes'
+                                : 'Mock messages disabled - Using real data now',
+                          ),
+                          backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                title: const Text(
+                  'Use Mock Messages',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  useMockMessages
+                      ? 'Currently showing sample users (Jenny, Laurent, etc.)'
+                      : 'Currently showing real Firebase data',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: useMockMessages
+                        ? Colors.orange.shade700
+                        : Colors.green.shade700,
+                  ),
+                ),
+                activeColor: Colors.purple,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -337,13 +478,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
               color: color,
             ),
           ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(title, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
         ],
       ),
     );
@@ -378,7 +513,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
             ),
           ),
         ),
-        
+
         // Users List
         Expanded(
           child: _users.isEmpty
@@ -397,11 +532,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
   }
 
   Widget _buildUserCard(UserModel user) {
-    final statusColor = user.accountStatus == 'suspended' 
-        ? Colors.red 
-        : user.accountStatus == 'deleted' 
-            ? Colors.grey 
-            : Colors.green;
+    final statusColor = user.accountStatus == 'suspended'
+        ? Colors.red
+        : user.accountStatus == 'deleted'
+        ? Colors.grey
+        : Colors.green;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -421,11 +556,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
         leading: CircleAvatar(
           radius: 28,
           backgroundColor: AppColors.warmBlush,
-          backgroundImage: user.photos.isNotEmpty 
-              ? NetworkImage(user.photos.first) 
+          backgroundImage: user.photos.isNotEmpty
+              ? NetworkImage(user.photos.first)
               : null,
-          child: user.photos.isEmpty 
-              ? Icon(Icons.person, color: AppColors.cupidPink) 
+          child: user.photos.isEmpty
+              ? Icon(Icons.person, color: AppColors.cupidPink)
               : null,
         ),
         title: Row(
@@ -461,8 +596,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
           children: [
             const SizedBox(height: 4),
             Text(user.email ?? 'No email'),
-            if (user.age != null)
-              Text('Age: ${user.age}'),
+            if (user.age != null) Text('Age: ${user.age}'),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -527,7 +661,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete User'),
-            content: Text('Are you sure you want to delete ${user.displayName}?'),
+            content: Text(
+              'Are you sure you want to delete ${user.displayName}?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -549,9 +685,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
     }
 
     if (message.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       if (success) {
         _checkAdminAndLoadData();
       }
@@ -559,8 +695,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
   }
 
   Widget _buildReportsTab() {
-    final pendingReports = _reports.where((r) => r['status'] == 'pending').toList();
-    
+    final pendingReports = _reports
+        .where((r) => r['status'] == 'pending')
+        .toList();
+
     return Column(
       children: [
         // Stats Header
@@ -571,16 +709,20 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildReportStat('Pending', pendingReports.length, Colors.orange),
-              _buildReportStat('Resolved', 
-                  _reports.where((r) => r['status'] == 'resolved').length, 
-                  Colors.green),
-              _buildReportStat('Dismissed', 
-                  _reports.where((r) => r['status'] == 'dismissed').length, 
-                  Colors.grey),
+              _buildReportStat(
+                'Resolved',
+                _reports.where((r) => r['status'] == 'resolved').length,
+                Colors.green,
+              ),
+              _buildReportStat(
+                'Dismissed',
+                _reports.where((r) => r['status'] == 'dismissed').length,
+                Colors.grey,
+              ),
             ],
           ),
         ),
-        
+
         // Reports List
         Expanded(
           child: _reports.isEmpty
@@ -609,13 +751,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
             color: color,
           ),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
       ],
     );
   }
@@ -624,8 +760,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
     final statusColor = report['status'] == 'pending'
         ? Colors.orange
         : report['status'] == 'resolved'
-            ? Colors.green
-            : Colors.grey;
+        ? Colors.green
+        : Colors.grey;
 
     final createdAt = (report['createdAt'] as Timestamp?)?.toDate();
     final dateString = createdAt != null
@@ -654,7 +790,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _getReasonColor(report['reason']).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -669,7 +808,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -698,21 +840,20 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
               children: [
                 Text(
                   dateString,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
                 if (report['status'] == 'pending')
                   Row(
                     children: [
                       TextButton(
-                        onPressed: () => _handleReportAction(report['id'], 'dismissed'),
+                        onPressed: () =>
+                            _handleReportAction(report['id'], 'dismissed'),
                         child: const Text('Dismiss'),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: () => _handleReportAction(report['id'], 'resolved'),
+                        onPressed: () =>
+                            _handleReportAction(report['id'], 'resolved'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.cupidPink,
                           foregroundColor: Colors.white,
@@ -750,13 +891,13 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
 
   Future<void> _handleReportAction(String reportId, String status) async {
     final success = await _adminService.resolveReport(reportId, status);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(success ? 'Report $status' : 'Failed to update report'),
       ),
     );
-    
+
     if (success) {
       _checkAdminAndLoadData();
     }
@@ -776,17 +917,25 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildVerificationStat('Pending', pendingVerifications.length, Colors.orange),
-              _buildVerificationStat('Approved', 
-                  _verifications.where((v) => v['status'] == 'approved').length, 
-                  Colors.green),
-              _buildVerificationStat('Rejected', 
-                  _verifications.where((v) => v['status'] == 'rejected').length, 
-                  Colors.red),
+              _buildVerificationStat(
+                'Pending',
+                pendingVerifications.length,
+                Colors.orange,
+              ),
+              _buildVerificationStat(
+                'Approved',
+                _verifications.where((v) => v['status'] == 'approved').length,
+                Colors.green,
+              ),
+              _buildVerificationStat(
+                'Rejected',
+                _verifications.where((v) => v['status'] == 'rejected').length,
+                Colors.red,
+              ),
             ],
           ),
         ),
-        
+
         // Verifications List
         Expanded(
           child: _verifications.isEmpty
@@ -815,13 +964,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
             color: color,
           ),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
       ],
     );
   }
@@ -830,15 +973,15 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
     final statusColor = verification['status'] == 'pending'
         ? Colors.orange
         : verification['status'] == 'approved'
-            ? Colors.green
-            : Colors.red;
+        ? Colors.green
+        : Colors.red;
 
     final type = verification['verificationType'] ?? 'unknown';
-    final typeIcon = type == 'phone' 
-        ? Icons.phone 
-        : type == 'photo' 
-            ? Icons.camera_alt 
-            : Icons.credit_card;
+    final typeIcon = type == 'phone'
+        ? Icons.phone
+        : type == 'photo'
+        ? Icons.camera_alt
+        : Icons.credit_card;
 
     final submittedAt = (verification['submittedAt'] as Timestamp?)?.toDate();
     final dateString = submittedAt != null
@@ -887,16 +1030,16 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                       ),
                       Text(
                         '${type.toString().toUpperCase()} Verification',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -912,7 +1055,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                 ),
               ],
             ),
-            
+
             // Show verification details
             if (verification['selfieUrl'] != null) ...[
               const SizedBox(height: 12),
@@ -932,35 +1075,32 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   dateString,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
                 if (verification['status'] == 'pending')
                   Row(
                     children: [
                       TextButton(
                         onPressed: () => _handleVerificationAction(
-                          verification['id'], 
+                          verification['id'],
                           false,
                         ),
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
                         child: const Text('Reject'),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
-                        onPressed: () => _handleVerificationAction(
-                          verification['id'], 
-                          true,
-                        ),
+                        onPressed: () =>
+                            _handleVerificationAction(verification['id'], true),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
@@ -977,22 +1117,33 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
     );
   }
 
-  Future<void> _handleVerificationAction(String verificationId, bool approve) async {
+  Future<void> _handleVerificationAction(
+    String verificationId,
+    bool approve,
+  ) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
     bool success;
     if (approve) {
-      success = await _adminService.approveVerification(verificationId, currentUser.uid);
+      success = await _adminService.approveVerification(
+        verificationId,
+        currentUser.uid,
+      );
     } else {
-      success = await _adminService.rejectVerification(verificationId, currentUser.uid);
+      success = await _adminService.rejectVerification(
+        verificationId,
+        currentUser.uid,
+      );
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success 
-            ? 'Verification ${approve ? 'approved' : 'rejected'}' 
-            : 'Failed to update verification'),
+        content: Text(
+          success
+              ? 'Verification ${approve ? 'approved' : 'rejected'}'
+              : 'Failed to update verification',
+        ),
       ),
     );
 

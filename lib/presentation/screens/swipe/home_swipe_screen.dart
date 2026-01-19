@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconly/iconly.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/services/matching_service.dart';
 import '../../../data/services/swipe_service.dart';
@@ -485,7 +486,7 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                         child: IconButton(
                           onPressed: () => context.push('/settings'),
                           icon: const Icon(
-                            Icons.tune_rounded,
+                            IconlyLight.filter,
                             color: AppColors.deepPlum,
                           ),
                         ),
@@ -528,10 +529,90 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
               ),
             ),
 
-            // Small bottom padding
-            const SizedBox(height: 20),
+            // Action Buttons Row (below the card)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Pass Button (X)
+                  _buildActionButton(
+                    icon: Icons.close,
+                    color: Colors.white,
+                    iconColor: const Color(0xFFFF6B6B),
+                    size: 56,
+                    onPressed: () {
+                      if (_currentIndex < _profiles.length) {
+                        _handleSwipe(_profiles[_currentIndex].uid, false);
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 20),
+
+                  // Super Like Button (Star)
+                  _buildActionButton(
+                    icon: Icons.star,
+                    color: Colors.white,
+                    iconColor: const Color(0xFF00D4FF),
+                    size: 56,
+                    onPressed: () {
+                      if (_currentIndex < _profiles.length) {
+                        HapticFeedback.mediumImpact();
+                        _handleSwipe(_profiles[_currentIndex].uid, true);
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 20),
+
+                  // Like Button (Heart)
+                  _buildActionButton(
+                    icon: Icons.favorite,
+                    color: AppColors.cupidPink,
+                    iconColor: Colors.white,
+                    size: 64,
+                    onPressed: () {
+                      if (_currentIndex < _profiles.length) {
+                        HapticFeedback.heavyImpact();
+                        _handleSwipe(_profiles[_currentIndex].uid, true);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required Color color,
+    required Color iconColor,
+    required double size,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onPressed();
+      },
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: iconColor, size: size * 0.45),
       ),
     );
   }

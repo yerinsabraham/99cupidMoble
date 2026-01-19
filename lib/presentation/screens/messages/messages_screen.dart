@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:iconly/iconly.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
@@ -21,6 +22,91 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _useMockData = true; // Will be loaded from Firebase
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMockDataSetting();
+  }
+
+  // Load mock data setting from Firebase
+  Future<void> _loadMockDataSetting() async {
+    try {
+      final doc = await _firestore
+          .collection('appSettings')
+          .doc('development')
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        final useMock = doc.data()!['useMockMessages'] as bool? ?? true;
+        if (mounted) {
+          setState(() => _useMockData = useMock);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading mock data setting: $e');
+      // Keep default value on error
+    }
+  }
+
+  // Mock chat data for design preview
+  final List<Map<String, dynamic>> _mockChats = [
+    {
+      'id': '1',
+      'userName': 'Jenny',
+      'userPhoto':
+          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
+      'lastMessage': 'Hi! How are you doing today?',
+      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
+      'hasUnread': true,
+    },
+    {
+      'id': '2',
+      'userName': 'Laurent',
+      'userPhoto':
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
+      'lastMessage': 'It\'s not always easy, but it\'s definitely worth it.',
+      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
+      'hasUnread': false,
+    },
+    {
+      'id': '3',
+      'userName': 'Lily',
+      'userPhoto':
+          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400',
+      'lastMessage': 'Sounds good! See you then!',
+      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
+      'hasUnread': true,
+    },
+    {
+      'id': '4',
+      'userName': 'Caroline',
+      'userPhoto':
+          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400',
+      'lastMessage': 'okay sure!!',
+      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
+      'hasUnread': false,
+    },
+    {
+      'id': '5',
+      'userName': 'Marry Jane',
+      'userPhoto':
+          'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400',
+      'lastMessage': 'I\'m doing good.',
+      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
+      'hasUnread': false,
+    },
+    {
+      'id': '6',
+      'userName': 'Jennifer',
+      'userPhoto':
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+      'lastMessage': 'okay sure!!',
+      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
+      'hasUnread': false,
+    },
+  ];
 
   @override
   void dispose() {
@@ -43,22 +129,23 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           return null;
         })
         .map((snapshot) {
-      final chats = snapshot.docs
-          .map((doc) => ChatModel.fromFirestore(doc))
-          .toList();
+          final chats = snapshot.docs
+              .map((doc) => ChatModel.fromFirestore(doc))
+              .toList();
 
-      // Sort by last message time
-      chats.sort((a, b) {
-        if (a.lastMessageAt == null) return 1;
-        if (b.lastMessageAt == null) return -1;
-        return b.lastMessageAt!.compareTo(a.lastMessageAt!);
-      });
+          // Sort by last message time
+          chats.sort((a, b) {
+            if (a.lastMessageAt == null) return 1;
+            if (b.lastMessageAt == null) return -1;
+            return b.lastMessageAt!.compareTo(a.lastMessageAt!);
+          });
 
-      return chats;
-    }).handleError((error) {
-      debugPrint('Error mapping chats: $error');
-      return <ChatModel>[];
-    });
+          return chats;
+        })
+        .handleError((error) {
+          debugPrint('Error mapping chats: $error');
+          return <ChatModel>[];
+        });
   }
 
   @override
@@ -67,311 +154,568 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.softIvory,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(20.0),
+      body: Column(
+        children: [
+          // Pink Header with Chat title
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.cupidPink,
+                  AppColors.cupidPink.withOpacity(0.9),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.chat_bubble, color: AppColors.cupidPink, size: 28),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Messages',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.deepPlum,
+                  // Header Row with back button and search
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: AppColors.deepPlum,
+                              size: 18,
+                            ),
+                            onPressed: () => Navigator.of(context).canPop()
+                                ? Navigator.of(context).pop()
+                                : null,
+                          ),
                         ),
-                      ),
-                    ],
+                        const Text(
+                          'Chat',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: const Icon(
+                              IconlyLight.search,
+                              color: AppColors.deepPlum,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              // Show search dialog or expand search
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  
-                  // Search Bar
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                    decoration: InputDecoration(
-                      hintText: 'Search messages...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+
+                  // Horizontal Scrollable User Avatars
+                  Container(
+                    height: 110,
+                    padding: const EdgeInsets.only(top: 8, bottom: 16),
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _useMockData ? _mockChats.length : 0,
+                      itemBuilder: (context, index) {
+                        if (_useMockData) {
+                          final mock = _mockChats[index];
+                          return GestureDetector(
+                            onTap: () {
+                              // Navigate to mock chat (smooth transition point)
+                              context.push('/chat/mock_${mock['id']}');
+                            },
+                            child: Container(
+                              width: 80,
+                              margin: const EdgeInsets.only(right: 16),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 3,
+                                      ),
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 30,
+                                      backgroundImage: NetworkImage(
+                                        mock['userPhoto'] as String,
+                                      ),
+                                      backgroundColor: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    mock['userName'] as String,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
                     ),
                   ),
                 ],
               ),
             ),
+          ),
 
-            // Chats List
-            Expanded(
-              child: StreamBuilder<List<ChatModel>>(
-                stream: _getChatsStream(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: LoadingIndicator());
-                  }
-
-                  // Handle errors silently - show empty state instead
-                  if (snapshot.hasError) {
-                    debugPrint('Chat stream error: ${snapshot.error}');
-                  }
-
-                  final chats = snapshot.data ?? [];
-                  
-                  // Filter by search query
-                  final filteredChats = chats.where((chat) {
-                    final otherUserName = chat.getOtherUserName(currentUserId);
-                    return otherUserName
-                        .toLowerCase()
-                        .contains(_searchQuery.toLowerCase());
-                  }).toList();
-
-                  if (filteredChats.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: AppColors.warmBlush,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.chat_bubble_outline,
-                              size: 60,
-                              color: AppColors.cupidPink,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'No messages yet',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.deepPlum,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Start swiping to find matches\nand begin conversations!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredChats.length,
-                    itemBuilder: (context, index) {
-                      final chat = filteredChats[index];
-                      final otherUserName = chat.getOtherUserName(currentUserId);
-                      final otherUserPhoto = chat.getOtherUserPhoto(currentUserId);
-                      final unreadCount = chat.getUnreadCount(currentUserId);
-                      final hasUnread = unreadCount > 0;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              context.push('/chat/${chat.id}');
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: hasUnread 
-                                    ? AppColors.warmBlush.withValues(alpha: 0.5)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: hasUnread 
-                                    ? Border.all(
-                                        color: AppColors.cupidPink.withValues(alpha: 0.3),
-                                        width: 1.5,
-                                      )
-                                    : null,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: hasUnread
-                                        ? AppColors.cupidPink.withValues(alpha: 0.1)
-                                        : Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: hasUnread ? 15 : 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+          // Message List with rounded top and bottom gradient
+          Expanded(
+            child: Stack(
+              children: [
+                _useMockData
+                    ? _buildMockMessageList()
+                    : StreamBuilder<List<ChatModel>>(
+                        stream: _getChatsStream(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(32),
+                                  topRight: Radius.circular(32),
+                                ),
                               ),
-                              child: Row(
-                                children: [
-                                  // Premium Avatar with online indicator
-                                  Stack(
-                                    children: [
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          gradient: otherUserPhoto == null
-                                              ? const LinearGradient(
-                                                  colors: [Color(0xFFFF6B9D), AppColors.cupidPink],
-                                                )
-                                              : null,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: AppColors.cupidPink.withValues(alpha: 0.2),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: CircleAvatar(
-                                          radius: 30,
-                                          backgroundColor: Colors.transparent,
-                                          backgroundImage: otherUserPhoto != null
-                                              ? NetworkImage(otherUserPhoto)
-                                              : null,
-                                          child: otherUserPhoto == null
-                                              ? Text(
-                                                  otherUserName.isNotEmpty 
-                                                      ? otherUserName[0].toUpperCase()
-                                                      : '?',
-                                                  style: const TextStyle(
-                                                    fontSize: 24,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
-                                                  ),
-                                                )
-                                              : null,
-                                        ),
-                                      ),
-                                      if (hasUnread)
-                                        Positioned(
-                                          top: 0,
-                                          right: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(6),
+                              child: const Center(child: LoadingIndicator()),
+                            );
+                          }
+
+                          if (snapshot.hasError) {
+                            debugPrint('Chat stream error: ${snapshot.error}');
+                          }
+
+                          final chats = snapshot.data ?? [];
+
+                          // Filter by search query
+                          final filteredChats = chats.where((chat) {
+                            final otherUserName = chat.getOtherUserName(
+                              currentUserId,
+                            );
+                            return otherUserName.toLowerCase().contains(
+                              _searchQuery.toLowerCase(),
+                            );
+                          }).toList();
+
+                          return Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(32),
+                                topRight: Radius.circular(32),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                // Handle indicator
+                                Container(
+                                  margin: const EdgeInsets.only(
+                                    top: 12,
+                                    bottom: 8,
+                                  ),
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+
+                                if (filteredChats.isEmpty)
+                                  Expanded(
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(24),
                                             decoration: BoxDecoration(
-                                              gradient: const LinearGradient(
-                                                colors: [Color(0xFFFF6B9D), AppColors.cupidPink],
-                                              ),
+                                              color: AppColors.warmBlush,
                                               shape: BoxShape.circle,
-                                              border: Border.all(color: Colors.white, width: 2),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: AppColors.cupidPink.withValues(alpha: 0.4),
-                                                  blurRadius: 8,
+                                            ),
+                                            child: const Icon(
+                                              Icons.chat_bubble_outline,
+                                              size: 60,
+                                              color: AppColors.cupidPink,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 20),
+                                          const Text(
+                                            'No messages yet',
+                                            style: TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.deepPlum,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Start swiping to find matches\nand begin conversations!',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Expanded(
+                                    child: ListView.separated(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      itemCount: filteredChats.length,
+                                      separatorBuilder: (context, index) =>
+                                          const SizedBox(height: 0),
+                                      itemBuilder: (context, index) {
+                                        final chat = filteredChats[index];
+                                        final otherUserName = chat
+                                            .getOtherUserName(currentUserId);
+                                        final otherUserPhoto = chat
+                                            .getOtherUserPhoto(currentUserId);
+                                        final unreadCount = chat.getUnreadCount(
+                                          currentUserId,
+                                        );
+                                        final hasUnread = unreadCount > 0;
+
+                                        return InkWell(
+                                          onTap: () =>
+                                              context.push('/chat/${chat.id}'),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 12,
+                                              horizontal: 8,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                // User Avatar
+                                                CircleAvatar(
+                                                  radius: 28,
+                                                  backgroundImage:
+                                                      otherUserPhoto != null
+                                                      ? NetworkImage(
+                                                          otherUserPhoto,
+                                                        )
+                                                      : null,
+                                                  backgroundColor: AppColors
+                                                      .cupidPink
+                                                      .withOpacity(0.2),
+                                                  child: otherUserPhoto == null
+                                                      ? Text(
+                                                          otherUserName
+                                                                  .isNotEmpty
+                                                              ? otherUserName[0]
+                                                                    .toUpperCase()
+                                                              : '?',
+                                                          style:
+                                                              const TextStyle(
+                                                                fontSize: 20,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                color: AppColors
+                                                                    .cupidPink,
+                                                              ),
+                                                        )
+                                                      : null,
+                                                ),
+                                                const SizedBox(width: 16),
+
+                                                // Message Info
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          Expanded(
+                                                            child: Text(
+                                                              otherUserName,
+                                                              style: TextStyle(
+                                                                fontSize: 16,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                color: AppColors
+                                                                    .deepPlum,
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+                                                          if (chat.lastMessageAt !=
+                                                              null)
+                                                            Text(
+                                                              _formatTime(
+                                                                chat.lastMessageAt!,
+                                                              ),
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                color: Colors
+                                                                    .grey[500],
+                                                              ),
+                                                            ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: Text(
+                                                              chat.lastMessage ??
+                                                                  'Start the conversation! 💬',
+                                                              style: TextStyle(
+                                                                fontSize: 14,
+                                                                color: Colors
+                                                                    .grey[600],
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 8,
+                                                          ),
+                                                          if (hasUnread)
+                                                            Row(
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .done_all,
+                                                                  size: 16,
+                                                                  color: AppColors
+                                                                      .cupidPink,
+                                                                ),
+                                                              ],
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ],
                                             ),
-                                            constraints: const BoxConstraints(
-                                              minWidth: 22,
-                                              minHeight: 22,
-                                            ),
-                                            child: Text(
-                                              unreadCount > 9 ? '9+' : '$unreadCount',
-                                              style: const TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
                                           ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 16),
-
-                                  // Chat Info
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                otherUserName,
-                                                style: TextStyle(
-                                                  fontSize: 17,
-                                                  fontWeight: hasUnread ? FontWeight.bold : FontWeight.w600,
-                                                  color: AppColors.deepPlum,
-                                                  letterSpacing: -0.3,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (chat.lastMessageAt != null)
-                                              Text(
-                                                _formatTime(chat.lastMessageAt!),
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
-                                                  color: hasUnread 
-                                                      ? AppColors.cupidPink 
-                                                      : Colors.grey[500],
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          chat.lastMessage ?? 'Start the conversation! 💬',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
-                                            color: hasUnread 
-                                                ? AppColors.deepPlum.withValues(alpha: 0.8)
-                                                : Colors.grey[600],
-                                            height: 1.3,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                                        );
+                                      },
                                     ),
                                   ),
-                                  
-                                  // Chevron
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: Colors.grey[400],
-                                    size: 24,
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                // Bottom white blur gradient
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      height: 120,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withOpacity(0),
+                            Colors.white.withOpacity(0.3),
+                            Colors.white.withOpacity(0.7),
+                            Colors.white,
+                          ],
+                          stops: const [0.0, 0.3, 0.7, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMockMessageList() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(32),
+          topRight: Radius.circular(32),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Handle indicator
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 8,
+                bottom: 100, // Extra padding for bottom navigation bar
+              ),
+              itemCount: _mockChats.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 0),
+              itemBuilder: (context, index) {
+                final mock = _mockChats[index];
+                final hasUnread = mock['hasUnread'] as bool;
+
+                return InkWell(
+                  onTap: () {
+                    // Navigate to mock chat (smooth transition point)
+                    // When switching to real data, replace 'mock_${mock['id']}' with actual chatId
+                    context.push('/chat/mock_${mock['id']}');
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        // User Avatar
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundImage: NetworkImage(
+                            mock['userPhoto'] as String,
+                          ),
+                          backgroundColor: AppColors.cupidPink.withOpacity(0.2),
+                        ),
+                        const SizedBox(width: 16),
+
+                        // Message Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      mock['userName'] as String,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.deepPlum,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatTime(
+                                      mock['lastMessageAt'] as DateTime,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[500],
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      mock['lastMessage'] as String,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  if (hasUnread)
+                                    const Icon(
+                                      Icons.done_all,
+                                      size: 16,
+                                      color: AppColors.cupidPink,
+                                    ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -381,9 +725,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final difference = now.difference(time);
 
     if (difference.inDays > 0) {
-      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+      return '${time.hour}:${time.minute.toString().padLeft(2, '0')} PM';
     } else {
-      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+      return '${time.hour}:${time.minute.toString().padLeft(2, '0')} PM';
     }
   }
 }

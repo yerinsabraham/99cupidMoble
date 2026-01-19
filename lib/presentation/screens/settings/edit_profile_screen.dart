@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconly/iconly.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../widgets/common/loading_indicator.dart';
 
@@ -22,17 +23,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
-  
+
   bool _isLoading = true;
   bool _isSaving = false;
-  
+
   // Form controllers
   late TextEditingController _nameController;
   late TextEditingController _bioController;
   late TextEditingController _locationController;
   late TextEditingController _jobController;
   late TextEditingController _educationController;
-  
+
   List<String> _photos = [];
   List<String> _interests = [];
   String _gender = 'other';
@@ -42,9 +43,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   int _maxDistance = 50;
 
   final List<String> _availableInterests = [
-    'Music', 'Movies', 'Travel', 'Food', 'Fitness', 'Reading',
-    'Gaming', 'Art', 'Photography', 'Dancing', 'Cooking', 'Hiking',
-    'Sports', 'Yoga', 'Fashion', 'Technology', 'Nature', 'Pets',
+    'Music',
+    'Movies',
+    'Travel',
+    'Food',
+    'Fitness',
+    'Reading',
+    'Gaming',
+    'Art',
+    'Photography',
+    'Dancing',
+    'Cooking',
+    'Hiking',
+    'Sports',
+    'Yoga',
+    'Fashion',
+    'Technology',
+    'Nature',
+    'Pets',
   ];
 
   @override
@@ -70,7 +86,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _loadProfile() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
@@ -106,9 +122,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _addPhoto() async {
     if (_photos.length >= 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum 6 photos allowed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Maximum 6 photos allowed')));
       return;
     }
 
@@ -153,7 +169,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       // Upload to Firebase Storage
       final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = _storage.ref().child('users/${currentUser.uid}/photos/$fileName');
+      final ref = _storage.ref().child(
+        'users/${currentUser.uid}/photos/$fileName',
+      );
       await ref.putFile(File(image.path));
       final downloadUrl = await ref.getDownloadURL();
 
@@ -165,9 +183,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       debugPrint('Error adding photo: $e');
       setState(() => _isSaving = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to upload photo')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to upload photo')));
       }
     }
   }
@@ -215,9 +233,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name is required')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Name is required')));
       return;
     }
 
@@ -264,9 +282,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       debugPrint('Error saving profile: $e');
       setState(() => _isSaving = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save profile')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to save profile')));
       }
     }
   }
@@ -274,9 +292,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: LoadingIndicator()),
-      );
+      return const Scaffold(body: Center(child: LoadingIndicator()));
     }
 
     return Scaffold(
@@ -316,37 +332,40 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Photos Section
-            _buildSectionHeader('Photos', subtitle: 'Drag to reorder. First photo is your main photo.'),
+            _buildSectionHeader(
+              'Photos',
+              subtitle: 'Drag to reorder. First photo is your main photo.',
+            ),
             _buildPhotosGrid(),
-            
+
             const SizedBox(height: 24),
-            
+
             // Basic Info Section
             _buildSectionHeader('Basic Info'),
             _buildInputField(
               controller: _nameController,
               label: 'Name',
               hint: 'Enter your name',
-              icon: Icons.person_outline,
+              icon: IconlyLight.profile,
             ),
             _buildInputField(
               controller: _bioController,
               label: 'Bio',
               hint: 'Tell us about yourself...',
-              icon: Icons.edit_outlined,
+              icon: IconlyLight.edit,
               maxLines: 4,
             ),
             _buildInputField(
               controller: _locationController,
               label: 'Location',
               hint: 'City, Country',
-              icon: Icons.location_on_outlined,
+              icon: IconlyLight.location,
             ),
             _buildInputField(
               controller: _jobController,
               label: 'Job',
               hint: 'What do you do?',
-              icon: Icons.work_outline,
+              icon: IconlyLight.work,
             ),
             _buildInputField(
               controller: _educationController,
@@ -354,9 +373,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               hint: 'Where did you study?',
               icon: Icons.school_outlined,
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Gender Section
             _buildSectionHeader('I am'),
             Padding(
@@ -364,15 +383,30 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: Wrap(
                 spacing: 8,
                 children: [
-                  _buildChoiceChip('Man', 'man', _gender, (v) => setState(() => _gender = v)),
-                  _buildChoiceChip('Woman', 'woman', _gender, (v) => setState(() => _gender = v)),
-                  _buildChoiceChip('Other', 'other', _gender, (v) => setState(() => _gender = v)),
+                  _buildChoiceChip(
+                    'Man',
+                    'man',
+                    _gender,
+                    (v) => setState(() => _gender = v),
+                  ),
+                  _buildChoiceChip(
+                    'Woman',
+                    'woman',
+                    _gender,
+                    (v) => setState(() => _gender = v),
+                  ),
+                  _buildChoiceChip(
+                    'Other',
+                    'other',
+                    _gender,
+                    (v) => setState(() => _gender = v),
+                  ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Looking For Section
             _buildSectionHeader('Looking for'),
             Padding(
@@ -380,15 +414,30 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: Wrap(
                 spacing: 8,
                 children: [
-                  _buildChoiceChip('Men', 'men', _lookingFor, (v) => setState(() => _lookingFor = v)),
-                  _buildChoiceChip('Women', 'women', _lookingFor, (v) => setState(() => _lookingFor = v)),
-                  _buildChoiceChip('Everyone', 'everyone', _lookingFor, (v) => setState(() => _lookingFor = v)),
+                  _buildChoiceChip(
+                    'Men',
+                    'men',
+                    _lookingFor,
+                    (v) => setState(() => _lookingFor = v),
+                  ),
+                  _buildChoiceChip(
+                    'Women',
+                    'women',
+                    _lookingFor,
+                    (v) => setState(() => _lookingFor = v),
+                  ),
+                  _buildChoiceChip(
+                    'Everyone',
+                    'everyone',
+                    _lookingFor,
+                    (v) => setState(() => _lookingFor = v),
+                  ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Preferences Section
             _buildSectionHeader('Preferences'),
             _buildPreferenceSlider(
@@ -424,13 +473,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 },
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Interests Section
-            _buildSectionHeader('Interests', subtitle: 'Select up to 10 interests'),
+            _buildSectionHeader(
+              'Interests',
+              subtitle: 'Select up to 10 interests',
+            ),
             _buildInterestsGrid(),
-            
+
             const SizedBox(height: 32),
           ],
         ),
@@ -456,10 +508,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ],
@@ -545,11 +594,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 color: Colors.black.withOpacity(0.6),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.close,
-                size: 16,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.close, size: 16, color: Colors.white),
             ),
           ),
         ),
@@ -588,10 +633,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             const SizedBox(height: 8),
             Text(
               'Add Photo',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -630,7 +672,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Widget _buildChoiceChip(String label, String value, String selected, ValueChanged<String> onSelected) {
+  Widget _buildChoiceChip(
+    String label,
+    String value,
+    String selected,
+    ValueChanged<String> onSelected,
+  ) {
     final isSelected = selected == value;
     return ChoiceChip(
       label: Text(label),

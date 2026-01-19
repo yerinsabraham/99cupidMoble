@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iconly/iconly.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/heart_loader.dart';
@@ -30,32 +31,22 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final userProfile = ref.watch(userProfileProvider);
-    
+
     // Show loading screen while profile is loading
     if (userProfile.isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
         body: Center(
-          child: HeartLoader(
-            text: 'Loading your profile...',
-            size: 96,
-          ),
+          child: HeartLoader(text: 'Loading your profile...', size: 96),
         ),
       );
     }
-    
+
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.only(
-          left: 20,
-          right: 20,
-          bottom: 24,
-        ),
+        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 24),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF1C1C1E), // Dark gray background
@@ -73,23 +64,23 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildNavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home,
+              icon: IconlyLight.home,
+              activeIcon: IconlyBold.home,
               index: 0,
             ),
             _buildNavItem(
-              icon: Icons.favorite_outline,
-              activeIcon: Icons.favorite,
+              icon: IconlyLight.heart,
+              activeIcon: IconlyBold.heart,
               index: 1,
             ),
             _buildNavItem(
-              icon: Icons.chat_bubble_outline,
-              activeIcon: Icons.chat_bubble,
+              icon: IconlyLight.chat,
+              activeIcon: IconlyBold.chat,
               index: 2,
             ),
             _buildNavItem(
-              icon: Icons.person_outline,
-              activeIcon: Icons.person,
+              icon: IconlyLight.profile,
+              activeIcon: IconlyBold.profile,
               index: 3,
             ),
           ],
@@ -104,7 +95,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     required int index,
   }) {
     final isActive = _currentIndex == index;
-    
+
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
@@ -112,9 +103,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: isActive 
-              ? AppColors.cupidPink 
-              : Colors.transparent,
+          color: isActive ? AppColors.cupidPink : Colors.transparent,
           shape: BoxShape.circle, // Fully circular background
         ),
         child: Icon(

@@ -122,14 +122,14 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
         ? GestureDetector(
             onTapDown: (details) {
               final width = MediaQuery.of(context).size.width;
-              if (details.localPosition.dx < width / 3) {
-                // Tap left - previous photo
+              if (details.localPosition.dx < width / 2) {
+                // Tap left half - previous photo
                 if (_currentPhotoIndex > 0) {
                   HapticFeedback.selectionClick();
                   setState(() => _currentPhotoIndex--);
                 }
-              } else if (details.localPosition.dx > width * 2 / 3) {
-                // Tap right - next photo
+              } else {
+                // Tap right half - next photo
                 if (_currentPhotoIndex < photos.length - 1) {
                   HapticFeedback.selectionClick();
                   setState(() => _currentPhotoIndex++);
@@ -375,60 +375,35 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                 // Full-screen photo background
                 Positioned.fill(child: _buildPhotoView()),
 
-                // Photo indicators at top
-                if (photos.length > 1)
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    right: 12,
-                    child: Row(
-                      children: List.generate(
-                        photos.length,
-                        (index) => Expanded(
-                          child: Container(
-                            height: 3,
-                            margin: const EdgeInsets.symmetric(horizontal: 2),
-                            decoration: BoxDecoration(
-                              color: index == _currentPhotoIndex
-                                  ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Photo count indicator in top-right
-                if (photos.length > 1)
-                  Positioned(
-                    top: 28,
-                    right: 16,
+                // Info button in top-right
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () => context.push('/user/${widget.profile.uid}'),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${_currentPhotoIndex + 1}/${photos.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        color: Colors.black.withValues(alpha: 0.4),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 2,
                         ),
+                      ),
+                      child: const Icon(
+                        Icons.info_outline,
+                        color: Colors.white,
+                        size: 20,
                       ),
                     ),
                   ),
+                ),
 
-                // Distance badge in top-left
+                // Location badge in top-left
                 if (location.isNotEmpty)
                   Positioned(
-                    top: 28,
+                    top: 16,
                     left: 16,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -517,165 +492,114 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                     ),
                   ),
 
-                // Bottom gradient with user info
+                // Bottom gradient with user info (tappable to view profile)
                 Positioned(
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(20, 60, 20, 100),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.4),
-                          Colors.black.withValues(alpha: 0.85),
-                        ],
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Name and age
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Text(
-                                    name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 30,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                  if (age != null) ...[
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      age,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w300,
-                                      ),
-                                    ),
-                                  ],
-                                  if (isVerified) ...[
-                                    const SizedBox(width: 8),
-                                    TweenAnimationBuilder<double>(
-                                      tween: Tween(begin: 0.0, end: 1.0),
-                                      duration: const Duration(
-                                        milliseconds: 1500,
-                                      ),
-                                      curve: Curves.easeInOut,
-                                      builder: (context, value, child) {
-                                        return Opacity(
-                                          opacity: 0.7 + (value * 0.3),
-                                          child: const Icon(
-                                            Icons.verified,
-                                            color: Colors.blue,
-                                            size: 20,
-                                          ),
-                                        );
-                                      },
-                                      onEnd: () => setState(() {}),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            // Info button
-                            GestureDetector(
-                              onTap: _showInfoBottomSheet,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.info_outline,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                              ),
-                            ),
+                  child: GestureDetector(
+                    onTap: () => context.push('/user/${widget.profile.uid}'),
+                    behavior: HitTestBehavior.translucent,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(24, 80, 24, 24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.3),
+                            Colors.black.withValues(alpha: 0.75),
                           ],
                         ),
-
-                        // Bio
-                        if (bio.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            bio,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 15,
-                              height: 1.3,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Name and age row
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.3,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (age != null) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  age,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                              if (isVerified) ...[
+                                const SizedBox(width: 6),
+                                const Icon(
+                                  Icons.verified,
+                                  color: Color(0xFF00D4FF),
+                                  size: 22,
+                                ),
+                              ],
+                            ],
                           ),
+
+                          // Job/Education info
+                          if (widget.profile.job != null &&
+                              widget.profile.job!.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.work_outline,
+                                  color: Colors.white70,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    widget.profile.job!,
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+
+                          // Bio preview
+                          if (bio.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              bio,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-
-                // Action buttons INSIDE the card (right side)
-                Positioned(
-                  right: 20,
-                  bottom: 120,
-                  child: Column(
-                    children: [
-                      // X button (Pass)
-                      _buildCardActionButton(
-                        icon: Icons.close,
-                        color: const Color(0xFFF5E6D3),
-                        iconColor: const Color(0xFFFF6B6B),
-                        size: 52,
-                        onPressed: () => _handleButtonSwipe(false),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Star button (Super Like)
-                      _buildCardActionButton(
-                        icon: Icons.star,
-                        color: const Color(0xFFF5E6D3),
-                        iconColor: const Color(0xFF00D4FF),
-                        size: 52,
-                        onPressed: () => _handleButtonSwipe(true),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Large Heart button (Like) - bottom right with pulse animation
-                Positioned(
-                  right: 16,
-                  bottom: 28,
-                  child: AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _pulseAnimation.value,
-                        child: _buildCardActionButton(
-                          icon: Icons.favorite,
-                          color: AppColors.cupidPink,
-                          iconColor: Colors.white,
-                          size: 64,
-                          onPressed: () {
-                            HapticFeedback.heavyImpact();
-                            _handleButtonSwipe(true);
-                          },
-                        ),
-                      );
-                    },
                   ),
                 ),
               ],
