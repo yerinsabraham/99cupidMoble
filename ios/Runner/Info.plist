@@ -58,5 +58,13 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>99Cupid needs access to your photo library to let you select profile photos.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>99Cupid needs access to your camera to let you take profile photos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>99Cupid uses your location to show you nearby matches.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
