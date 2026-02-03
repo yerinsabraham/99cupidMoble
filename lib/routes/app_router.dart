@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../presentation/screens/auth/splash_screen.dart';
 import '../presentation/screens/auth/login_screen.dart';
 import '../presentation/screens/auth/signup_screen.dart';
+import '../presentation/screens/auth/forgot_password_screen.dart';
 import '../presentation/screens/onboarding/profile_setup_screen.dart';
 import '../presentation/screens/onboarding/photo_upload_screen.dart';
 import '../presentation/screens/onboarding/interests_screen.dart';
@@ -15,82 +16,14 @@ import '../presentation/screens/settings/blocked_users_screen.dart';
 import '../presentation/screens/verification/verification_screen.dart';
 import '../presentation/screens/admin/admin_dashboard_screen.dart';
 import '../presentation/screens/profile/user_profile_screen.dart';
-import '../presentation/providers/auth_provider.dart';
 
-/// GoRouter configuration with authentication guards
+/// GoRouter configuration - Simple routing without reactive redirects
+/// Navigation logic is handled by individual screens (splash screen handles initial routing)
+/// This prevents the router from being recreated when auth/profile state changes
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(firebaseUserProvider);
-  final userProfile = ref.watch(userProfileProvider);
-  
   return GoRouter(
     initialLocation: '/splash',
-    redirect: (context, state) {
-      final currentPath = state.matchedLocation;
-      
-      // Don't redirect if on splash screen - let it handle navigation
-      if (currentPath == '/splash') {
-        return null;
-      }
-      
-      final isLoading = authState.isLoading || userProfile.isLoading;
-      final user = authState.value;
-      final profile = userProfile.value;
-      
-      debugPrint('Router: path=$currentPath, isLoading=$isLoading, user=${user?.uid}, profile=${profile?.displayName}');
-      
-      // If still loading, don't redirect - wait for data
-      if (isLoading) {
-        debugPrint('Router: Still loading, no redirect');
-        return null;
-      }
-      
-      final isAuthenticated = user != null;
-      final isOnAuthPage = currentPath.startsWith('/login') ||
-          currentPath.startsWith('/signup');
-      final isOnOnboarding = currentPath.startsWith('/onboarding');
-      final isOnHome = currentPath.startsWith('/home');
-      final isOnSettings = currentPath.startsWith('/settings');
-      
-      // Check if profile is complete - either by flag OR by having essential fields
-      bool profileComplete = false;
-      if (profile != null) {
-        final hasName = profile.displayName.isNotEmpty;
-        final hasGender = profile.gender.isNotEmpty;
-        final hasPhotos = profile.photos.isNotEmpty;
-        profileComplete = profile.profileSetupComplete || (hasName && hasGender && hasPhotos);
-        debugPrint('Router: profileSetupComplete=${profile.profileSetupComplete}, hasName=$hasName, hasGender=$hasGender, hasPhotos=$hasPhotos, profileComplete=$profileComplete');
-      }
-      
-      // If not authenticated and trying to access protected route
-      if (!isAuthenticated && !isOnAuthPage && currentPath != '/splash') {
-        debugPrint('Router: Not authenticated, redirecting to login');
-        return '/login';
-      }
-      
-      // If authenticated and on home/settings, NEVER redirect away
-      // The splash screen already validated the profile before navigating here
-      if (isAuthenticated && (isOnHome || isOnSettings)) {
-        debugPrint('Router: On home/settings, trusting splash screen decision');
-        return null;
-      }
-      
-      // If authenticated but profile incomplete, redirect to onboarding
-      // Only if NOT on home, settings, onboarding, or auth pages
-      if (isAuthenticated && !profileComplete && !isOnOnboarding && !isOnAuthPage && !isOnHome && !isOnSettings) {
-        debugPrint('Router: Profile incomplete, redirecting to onboarding');
-        return '/onboarding/setup';
-      }
-      
-      // If authenticated with complete profile and on auth/onboarding page, go to home
-      if (isAuthenticated && profileComplete && (isOnAuthPage || isOnOnboarding)) {
-        debugPrint('Router: Profile complete, redirecting to home');
-        return '/home';
-      }
-      
-      debugPrint('Router: No redirect needed');
-      // No redirect needed
-      return null;
-    },
+    debugLogDiagnostics: kDebugMode,
     routes: [
       GoRoute(
         path: '/splash',
@@ -103,6 +36,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/signup',
         builder: (context, state) => const SignUpScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/onboarding/setup',

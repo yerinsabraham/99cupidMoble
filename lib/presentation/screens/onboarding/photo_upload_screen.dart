@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../widgets/common/app_button.dart';
 
 /// Photo Upload Screen - Step 2: Upload profile photos
@@ -60,8 +61,14 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
   }
 
   Future<void> _saveAndContinue() async {
+    debugPrint('PhotoUpload: Continue button clicked');
+    
+    // Count photos
+    final photosToUpload = _photos.where((p) => p != null).toList();
+    debugPrint('PhotoUpload: ${photosToUpload.length} photos to upload');
+    
     // Require at least one photo
-    if (_photos.where((p) => p != null).isEmpty) {
+    if (photosToUpload.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add at least one photo')),
       );
@@ -71,30 +78,38 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     setState(() => _isUploading = true);
 
     try {
-      final authService = ref.read(authServiceProvider);
       final user = ref.read(firebaseUserProvider).value;
       
-      if (user == null) return;
+      if (user == null) {
+        debugPrint('PhotoUpload: No user found!');
+        return;
+      }
+
+      debugPrint('PhotoUpload: Starting upload for user ${user.uid}');
 
       // Upload photos to Firebase Storage
       final List<String> photoUrls = [];
       for (int i = 0; i < _photos.length; i++) {
         if (_photos[i] != null) {
+          debugPrint('PhotoUpload: Uploading photo $i');
           final url = await _uploadPhoto(_photos[i]!, user.uid, i);
           photoUrls.add(url);
+          debugPrint('PhotoUpload: Photo $i uploaded: $url');
         }
       }
 
-      // Update user profile with photo URLs
-      await authService.updateUserProfile(user.uid, {
-        'photos': photoUrls,
-        'photoURL': photoUrls.isNotEmpty ? photoUrls[0] : null,
-      });
+      debugPrint('PhotoUpload: All ${photoUrls.length} photos uploaded, storing in provider');
+
+      // Store photo URLs in provider (don't save to Firestore yet)
+      ref.read(onboardingProvider.notifier).setPhotos(photoUrls);
+
+      debugPrint('PhotoUpload: Navigating to interests screen');
 
       if (mounted) {
         context.go('/onboarding/interests');
       }
     } catch (e) {
+      debugPrint('PhotoUpload: Error - $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error uploading photos: $e')),
@@ -206,13 +221,28 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                       color: AppColors.deepPlum.withOpacity(0.6),
                     ),
                   ),
+                  if (photoCount == 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'Please add at least 1 photo to continue',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.red.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: AppButton(
                       onPressed: _isUploading || photoCount == 0
                           ? null
-                          : _saveAndContinue,
+                          : () {
+                              debugPrint('PhotoUpload: Button tapped, calling _saveAndContinue');
+                              _saveAndContinue();
+                            },
                       text: _isUploading ? 'Uploading...' : 'Continue',
                     ),
                   ),

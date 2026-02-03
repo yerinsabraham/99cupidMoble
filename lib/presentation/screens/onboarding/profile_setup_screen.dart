@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 
@@ -51,19 +52,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final authService = ref.read(authServiceProvider);
-      final user = ref.read(firebaseUserProvider).value;
-      
-      if (user == null) return;
-
-      // Update user profile with basic info
-      await authService.updateUserProfile(user.uid, {
-        'displayName': _nameController.text.trim(),
-        'bio': _bioController.text.trim(),
-        'age': int.tryParse(_ageController.text) ?? 0,
-        'gender': _selectedGender,
-        'location': _locationController.text.trim(),
-      });
+      // Store profile data in provider (don't save to Firestore yet)
+      ref.read(onboardingProvider.notifier).setProfileData(
+        displayName: _nameController.text.trim(),
+        bio: _bioController.text.trim(),
+        age: int.tryParse(_ageController.text) ?? 0,
+        gender: _selectedGender,
+        location: _locationController.text.trim(),
+      );
 
       if (mounted) {
         context.go('/onboarding/photos');

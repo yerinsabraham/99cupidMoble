@@ -59,20 +59,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleEmailLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    try {
-      await ref
-          .read(authNotifierProvider.notifier)
-          .signInWithEmail(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+    final success = await ref
+        .read(authNotifierProvider.notifier)
+        .signInWithEmail(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+    
+    if (success) {
       await _navigateAfterAuth();
-    } catch (e) {
+    } else {
       if (mounted) {
+        // Get user-friendly error message from auth state
+        final errorMessage = ref.read(authNotifierProvider).error ?? 
+            'Login failed. Please try again.';
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -80,15 +86,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleGoogleLogin() async {
-    try {
-      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    final success = await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    
+    if (success) {
       await _navigateAfterAuth();
-    } catch (e) {
+    } else {
       if (mounted) {
+        final errorMessage = ref.read(authNotifierProvider).error ?? 
+            'Google sign-in failed. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Google sign-in failed'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

@@ -62,14 +62,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
 
-    try {
-      await ref
-          .read(authNotifierProvider.notifier)
-          .signUpWithEmail(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
-          );
+    final success = await ref
+        .read(authNotifierProvider.notifier)
+        .signUpWithEmail(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
 
+    if (success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -80,12 +80,17 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         // New users always go to onboarding
         context.go('/onboarding/setup');
       }
-    } catch (e) {
+    } else {
       if (mounted) {
+        // Get user-friendly error message from auth state
+        final errorMessage = ref.read(authNotifierProvider).error ?? 
+            'Sign up failed. Please try again.';
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -93,15 +98,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   Future<void> _handleGoogleSignUp() async {
-    try {
-      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    final success = await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    
+    if (success) {
       await _navigateAfterAuth();
-    } catch (e) {
+    } else {
       if (mounted) {
+        final errorMessage = ref.read(authNotifierProvider).error ?? 
+            'Google sign-in failed. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Google sign-in failed'),
+            content: Text(errorMessage),
             backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

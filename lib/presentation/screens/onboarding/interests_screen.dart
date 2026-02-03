@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../widgets/common/app_button.dart';
 
 /// Interests Selection Screen - Step 3: Choose interests
@@ -76,11 +77,18 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
       
       if (user == null) return;
 
-      // Update user profile with interests and mark profile as complete
-      await authService.updateUserProfile(user.uid, {
-        'interests': _selectedInterests.toList(),
-        'profileSetupComplete': true,
-      });
+      // Store interests in provider
+      ref.read(onboardingProvider.notifier).setInterests(_selectedInterests.toList());
+
+      // Get all onboarding data collected across all steps
+      final onboardingData = ref.read(onboardingProvider);
+      final profileData = onboardingData.toMap(user.uid, user.email ?? '');
+
+      // Save everything to Firestore in one operation
+      await authService.updateUserProfile(user.uid, profileData);
+
+      // Clear onboarding data
+      ref.read(onboardingProvider.notifier).clear();
 
       if (mounted) {
         // Navigate to home screen

@@ -233,13 +233,14 @@ class AuthService {
     try {
       data['updatedAt'] = DateTime.now().toIso8601String();
 
+      // Use set with merge to create document if it doesn't exist
       await _firestore
           .collection(FirebaseCollections.users)
           .doc(uid)
-          .update(data);
+          .set(data, SetOptions(merge: true));
 
       if (kDebugMode) {
-        print('✅ User profile updated');
+        print('✅ User profile updated: $data');
       }
     } catch (e) {
       if (kDebugMode) {

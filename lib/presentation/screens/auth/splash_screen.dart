@@ -52,21 +52,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
           // Check if profile is complete - either by explicit flag OR by having essential fields
           final profileComplete = data?['profileSetupComplete'] ?? false;
-          final hasName =
-              data?['name'] != null && (data?['name'] as String).isNotEmpty;
-          final hasBirthday =
-              data?['dateOfBirth'] != null || data?['birthday'] != null;
-          final hasGender = data?['gender'] != null;
+          final hasDisplayName =
+              data?['displayName'] != null && (data?['displayName'] as String).isNotEmpty;
+          final hasAge = data?['age'] != null && (data?['age'] as int) > 0;
+          final hasGender = data?['gender'] != null && (data?['gender'] as String).isNotEmpty;
           final hasPhotos =
               data?['photos'] != null && (data?['photos'] as List).isNotEmpty;
 
           // Consider profile complete if flag is true OR if essential fields exist
           final isProfileUsable =
               profileComplete ||
-              (hasName && hasBirthday && hasGender && hasPhotos);
+              (hasDisplayName && hasAge && hasGender && hasPhotos);
 
           debugPrint(
-            'Splash: profileComplete=$profileComplete, hasName=$hasName, hasBirthday=$hasBirthday, hasGender=$hasGender, hasPhotos=$hasPhotos',
+            'Splash: profileComplete=$profileComplete, hasDisplayName=$hasDisplayName, hasAge=$hasAge, hasGender=$hasGender, hasPhotos=$hasPhotos',
           );
           debugPrint('Splash: isProfileUsable=$isProfileUsable');
 

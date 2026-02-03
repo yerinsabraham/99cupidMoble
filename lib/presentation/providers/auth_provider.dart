@@ -69,7 +69,8 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   /// Sign up with email
-  Future<void> signUpWithEmail({
+  /// Returns true if successful, false if failed (check state.error for message)
+  Future<bool> signUpWithEmail({
     required String email,
     required String password,
     String? displayName,
@@ -84,17 +85,25 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       
       state = state.copyWith(isLoading: false);
+      return true;
     } on FirebaseAuthException catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: _getErrorMessage(e.code),
       );
-      rethrow;
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'An unexpected error occurred. Please try again.',
+      );
+      return false;
     }
   }
 
   /// Sign in with email
-  Future<void> signInWithEmail({
+  /// Returns true if successful, false if failed (check state.error for message)
+  Future<bool> signInWithEmail({
     required String email,
     required String password,
   }) async {
@@ -107,46 +116,63 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       
       state = state.copyWith(isLoading: false);
+      return true;
     } on FirebaseAuthException catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: _getErrorMessage(e.code),
       );
-      rethrow;
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'An unexpected error occurred. Please try again.',
+      );
+      return false;
     }
   }
 
   /// Sign in with Google
-  Future<void> signInWithGoogle() async {
+  /// Returns true if successful, false if failed (check state.error for message)
+  Future<bool> signInWithGoogle() async {
     try {
       state = state.copyWith(isLoading: true, error: null);
       
       await _authService.signInWithGoogle();
       
       state = state.copyWith(isLoading: false);
+      return true;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: 'Google sign-in failed. Please try again.',
       );
-      rethrow;
+      return false;
     }
   }
 
   /// Send password reset email
-  Future<void> sendPasswordResetEmail(String email) async {
+  /// Returns true if successful, false if failed (check state.error for message)
+  Future<bool> sendPasswordResetEmail(String email) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
       
       await _authService.sendPasswordResetEmail(email);
       
       state = state.copyWith(isLoading: false);
+      return true;
     } on FirebaseAuthException catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: _getErrorMessage(e.code),
       );
-      rethrow;
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'An unexpected error occurred. Please try again.',
+      );
+      return false;
     }
   }
 
@@ -184,11 +210,17 @@ class AuthNotifier extends Notifier<AuthState> {
       case 'user-disabled':
         return 'This account has been disabled.';
       case 'user-not-found':
-        return 'No account found with this email.';
+        return 'No account found with this email. Please sign up first.';
       case 'wrong-password':
-        return 'Incorrect password.';
+        return 'Incorrect password. Please try again.';
+      case 'invalid-credential':
+        return 'Invalid email or password. If you signed up with Google, please use the Google sign-in button.';
       case 'too-many-requests':
         return 'Too many attempts. Please try again later.';
+      case 'network-request-failed':
+        return 'Network error. Please check your connection.';
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with this email. Try signing in with a different method.';
       default:
         return 'An error occurred. Please try again.';
     }
