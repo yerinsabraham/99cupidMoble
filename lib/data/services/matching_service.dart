@@ -63,7 +63,7 @@ class MatchingService {
           continue;
         }
 
-        // Filter by gender preference
+        // Filter by gender preference (current user's preference)
         if (currentUser.lookingFor != 'everyone') {
           final targetGender = currentUser.lookingFor == 'men'
               ? 'male'
@@ -71,6 +71,37 @@ class MatchingService {
           if (profile.gender.toLowerCase() != targetGender) {
             debugPrint(
               '⏭️  Skipping ${profile.displayName} - gender mismatch (looking for $targetGender, found ${profile.gender})',
+            );
+            continue;
+          }
+        }
+
+        // Filter by mutual preference (profile must also be looking for current user's gender)
+        if (profile.lookingFor != 'everyone') {
+          final currentUserGender = currentUser.gender.toLowerCase();
+          final profileLookingForGender = profile.lookingFor == 'men'
+              ? 'male'
+              : profile.lookingFor == 'women'
+                  ? 'female'
+                  : 'everyone';
+          
+          if (profileLookingForGender != 'everyone' && 
+              currentUserGender != profileLookingForGender) {
+            debugPrint(
+              '⏭️  Skipping ${profile.displayName} - they\'re looking for $profileLookingForGender, but you\'re $currentUserGender',
+            );
+            continue;
+          }
+        }
+
+        // Filter by age range preference (from user's preferences.ageRange)
+        if (profile.age != null) {
+          final minAge = (userDoc.data()?['preferences']?['ageRange']?['min'] as int?) ?? 18;
+          final maxAge = (userDoc.data()?['preferences']?['ageRange']?['max'] as int?) ?? 80;
+          
+          if (profile.age! < minAge || profile.age! > maxAge) {
+            debugPrint(
+              '⏭️  Skipping ${profile.displayName} - age ${profile.age} outside range ($minAge-$maxAge)',
             );
             continue;
           }

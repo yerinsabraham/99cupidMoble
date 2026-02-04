@@ -1,0 +1,180 @@
+-- LLDB integration loaded --
+warning: (arm64) /Users/apple/99cupid_mobile/build/ios/iphoneos/Runner.app/Runner empty dSYM file detected, dSYM was created with an executable with no debug info.
+CLIENT OF UIKIT REQUIRES UPDATE: This process does not adopt UIScene lifecycle. This will become an assert in a future version.
+FlutterView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+Dart execution mode: JIT
+flutter: The Dart VM service is listening on http://127.0.0.1:49417/A9QoD2a_Pbo=/
+12.6.0 - [FirebaseCore][I-COR000005] No app has been configured yet.
+XPC connection interrupted
+Class CKBrowserSwitcherViewController overrides the -traitCollection getter, which is not supported. If you're trying to override traits, you must use the appropriate API.
+flutter: Splash: currentUser = 40152qILi6WbEAVNYIn38yQ5qVi1
+nw_endpoint_flow_failed_with_error [C1 2c0f:fb50:4003:801::200a.443 failed parent-flow (unsatisfied (No network route), ipv4, dns)] already failing, returning
+nw_connection_get_connected_socket_block_invoke [C1] Client called nw_connection_get_connected_socket on unconnected nw_connection
+TCP Conn 0x13f3dbe80 Failed : error 0:50 [50]
+12.6.0 - [FirebaseFirestore][I-FST000001] WatchStream (313365653462373138) Stream error: 'Unavailable: Network connectivity changed'
+12.6.0 - [FirebaseFirestore][I-FST000001] Could not reach Cloud Firestore backend. Connection failed 1 times. Most recent error: Network connectivity changed
+ This typically indicates that your device does not have a healthy Internet connection at the moment. The client will operate in offline mode until it is able to successfully connect to the backend.
+flutter: Splash: User doc exists, data = {accountStatus: active, updatedAt: 2026-02-03T22:27:04.818775, subscriptionStatus: inactive, uid: 40152qILi6WbEAVNYIn38yQ5qVi1, education: null, isVerifiedAccount: false, location: Kiev, Ukraine, isAdmin: false, subscriptionId: null, isPhoneVerified: false, isVerified: false, interests: [], email: yerinsmgmt@gmail.com, isPhotoVerified: false, createdAt: 2026-02-03T22:26:22.150913, subscriptionStartDate: null, blockedByUsers: [], bio: 123456, lookingFor: everyone, hasActiveSubscription: false, blockedUsers: [], reportedBy: [], job: null, photoURL: null, gender: male, profileSetupComplete: false, subscriptionEndDate: null, age: 31, photos: [], stripeCustomerId: null, lastActiveAt: 2026-02-03T22:26:22.150920, isIDVerified: false, displayName: Yerins Abby}
+flutter: Splash: profileComplete=false, hasDisplayName=true, hasAge=true, hasGender=true, hasPhotos=false
+flutter: Splash: isProfileUsable=false
+FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+UIKeyboardLayoutStar implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+App is being debugged, do not track this hang
+Hang detected: 0.77s (debugger attached, not reporting)
+App is being debugged, do not track this hang
+Hang detected: 0.74s (debugger attached, not reporting)
+<0x13eef03c0> Gesture: System gesture gate timed out.
+FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+Unknown client: Runner
+AX Lookup problem - errorCode:1100 error:Permission denied portName:'com.apple.iphone.axserver' PID:7988 (
+	0   AXRuntime                           0x00000001d7bf60ac _AXGetPortFromCache + 796
+	1   AXRuntime                           0x00000001d7bfab70 AXUIElementPerformFencedActionWithValue + 700
+	2   UIKit                               0x000000025befb45c 5156CF99-D183-3D5A-844D-3BF027998A81 + 1561692
+	3   libdispatch.dylib                   0x0000000101d04584 _dispatch_call_block_and_release + 32
+	4   libdispatch.dylib                   0x0000000101d1e064 _dispatch_client_callout + 16
+	5   libdispatch.dylib                   0x0000000101d0c91c _dispatch_lane_serial_drain + 796
+	6   libdispatch.dylib                   0x0000000101d0d5a4 _dispatch_lane_invoke + 432
+	7   libdispatch.dylib                   0x0000000101d19894 _dispatch_root_queue_drain_deferred_wlh + 344
+	8   libdispatch.dylib                   0x0000000101d18eb0 _dispatch_workloop_worker_thread + 580
+	9   libsystem_pthread.dylib             0x000000022a47ca0c _pthread_wqthread + 292
+	10  libsystem_pthread.dylib             0x000000022a47caac start_wqthread + 8
+)
+AX Lookup problem - errorCode:1100 error:Permission denied portName:'com.apple.iphone.axserver' PID:7988 (
+	0   AXRuntime                           0x00000001d7bf60ac _AXGetPortFromCache + 796
+	1   AXRuntime                           0x00000001d7bfab70 AXUIElementPerformFencedActionWithValue + 700
+	2   UIKit                               0x000000025befb45c 5156CF99-D183-3D5A-844D-3BF027998A81 + 1561692
+	3   libdispatch.dylib                   0x0000000101d04584 _dispatch_call_block_and_release + 32
+	4   libdispatch.dylib                   0x0000000101d1e064 _dispatch_client_callout + 16
+	5   libdispatch.dylib                   0x0000000101d0c91c _dispatch_lane_serial_drain + 796
+	6   libdispatch.dylib                   0x0000000101d0d5a4 _dispatch_lane_invoke + 432
+	7   libdispatch.dylib                   0x0000000101d19894 _dispatch_root_queue_drain_deferred_wlh + 344
+	8   libdispatch.dylib                   0x0000000101d18eb0 _dispatch_workloop_worker_thread + 580
+	9   libsystem_pthread.dylib             0x000000022a47ca0c _pthread_wqthread + 292
+	10  libsystem_pthread.dylib             0x000000022a47caac start_wqthread + 8
+)
+AX Lookup problem - errorCode:1100 error:Permission denied portName:'com.apple.iphone.axserver' PID:7988 (
+	0   AXRuntime                           0x00000001d7bf60ac _AXGetPortFromCache + 796
+	1   AXRuntime                           0x00000001d7bfab70 AXUIElementPerformFencedActionWithValue + 700
+	2   UIKit                               0x000000025befb45c 5156CF99-D183-3D5A-844D-3BF027998A81 + 1561692
+	3   libdispatch.dylib                   0x0000000101d04584 _dispatch_call_block_and_release + 32
+	4   libdispatch.dylib                   0x0000000101d1e064 _dispatch_client_callout + 16
+	5   libdispatch.dylib                   0x0000000101d0c91c _dispatch_lane_serial_drain + 796
+	6   libdispatch.dylib                   0x0000000101d0d5a4 _dispatch_lane_invoke + 432
+	7   libdispatch.dylib                   0x0000000101d19894 _dispatch_root_queue_drain_deferred_wlh + 344
+	8   libdispatch.dylib                   0x0000000101d18eb0 _dispatch_workloop_worker_thread + 580
+	9   libsystem_pthread.dylib             0x000000022a47ca0c _pthread_wqthread + 292
+	10  libsystem_pthread.dylib             0x000000022a47caac start_wqthread + 8
+)
+image_picker: compressing is not supported for type (null). Returning the image with original quality
+AX Lookup problem - errorCode:1100 error:Permission denied portName:'com.apple.iphone.axserver' PID:7988 (
+	0   AXRuntime                           0x00000001d7bf60ac _AXGetPortFromCache + 796
+	1   AXRuntime                           0x00000001d7bfab70 AXUIElementPerformFencedActionWithValue + 700
+	2   UIKit                               0x000000025befb45c 5156CF99-D183-3D5A-844D-3BF027998A81 + 1561692
+	3   libdispatch.dylib                   0x0000000101d04584 _dispatch_call_block_and_release + 32
+	4   libdispatch.dylib                   0x0000000101d1e064 _dispatch_client_callout + 16
+	5   libdispatch.dylib                   0x0000000101d0c91c _dispatch_lane_serial_drain + 796
+	6   libdispatch.dylib                   0x0000000101d0d5a4 _dispatch_lane_invoke + 432
+	7   libdispatch.dylib                   0x0000000101d19894 _dispatch_root_queue_drain_deferred_wlh + 344
+	8   libdispatch.dylib                   0x0000000101d18eb0 _dispatch_workloop_worker_thread + 580
+	9   libsystem_pthread.dylib             0x000000022a47ca0c _pthread_wqthread + 292
+	10  libsystem_pthread.dylib             0x000000022a47caac start_wqthread + 8
+)
+AX Lookup problem - errorCode:1100 error:Permission denied portName:'com.apple.iphone.axserver' PID:7988 (
+	0   AXRuntime                           0x00000001d7bf60ac _AXGetPortFromCache + 796
+	1   AXRuntime                           0x00000001d7bfab70 AXUIElementPerformFencedActionWithValue + 700
+	2   UIKit                               0x000000025befb45c 5156CF99-D183-3D5A-844D-3BF027998A81 + 1561692
+	3   libdispatch.dylib                   0x0000000101d04584 _dispatch_call_block_and_release + 32
+	4   libdispatch.dylib                   0x0000000101d1e064 _dispatch_client_callout + 16
+	5   libdispatch.dylib                   0x0000000101d0c91c _dispatch_lane_serial_drain + 796
+	6   libdispatch.dylib                   0x0000000101d0d5a4 _dispatch_lane_invoke + 432
+	7   libdispatch.dylib                   0x0000000101d19894 _dispatch_root_queue_drain_deferred_wlh + 344
+	8   libdispatch.dylib                   0x0000000101d18eb0 _dispatch_workloop_worker_thread + 580
+	9   libsystem_pthread.dylib             0x000000022a47ca0c _pthread_wqthread + 292
+	10  libsystem_pthread.dylib             0x000000022a47caac start_wqthread + 8
+)
+AX Lookup problem - errorCode:1100 error:Permission denied portName:'com.apple.iphone.axserver' PID:7988 (
+	0   AXRuntime                           0x00000001d7bf60ac _AXGetPortFromCache + 796
+	1   AXRuntime                           0x00000001d7bfab70 AXUIElementPerformFencedActionWithValue + 700
+	2   UIKit                               0x000000025befb45c 5156CF99-D183-3D5A-844D-3BF027998A81 + 1561692
+	3   libdispatch.dylib                   0x0000000101d04584 _dispatch_call_block_and_release + 32
+	4   libdispatch.dylib                   0x0000000101d1e064 _dispatch_client_callout + 16
+	5   libdispatch.dylib                   0x0000000101d0c91c _dispatch_lane_serial_drain + 796
+	6   libdispatch.dylib                   0x0000000101d0d5a4 _dispatch_lane_invoke + 432
+	7   libdispatch.dylib                   0x0000000101d19894 _dispatch_root_queue_drain_deferred_wlh + 344
+	8   libdispatch.dylib                   0x0000000101d18eb0 _dispatch_workloop_worker_thread + 580
+	9   libsystem_pthread.dylib             0x000000022a47ca0c _pthread_wqthread + 292
+	10  libsystem_pthread.dylib             0x000000022a47caac start_wqthread + 8
+)
+IOSurface creation failed: e00002c2 parentID: 00000000 properties: {
+    IOSurfaceAddress = 5124685824;
+    IOSurfaceAllocSize = 13454343;
+    IOSurfaceCacheMode = 0;
+    IOSurfaceMapCacheAttribute = 1;
+    IOSurfaceName = CMPhoto;
+    IOSurfacePixelFormat = 1246774599;
+}
+IOSurface creation failed: e00002c2 parentID: 00000000 property: IOSurfaceCacheMode
+IOSurface creation failed: e00002c2 parentID: 00000000 property: IOSurfacePixelFormat
+IOSurface creation failed: e00002c2 parentID: 00000000 property: IOSurfaceMapCacheAttribute
+IOSurface creation failed: e00002c2 parentID: 00000000 property: IOSurfaceAddress
+IOSurface creation failed: e00002c2 parentID: 00000000 property: IOSurfaceAllocSize
+IOSurface creation failed: e00002c2 parentID: 00000000 property: IOSurfaceName
+AX Lookup problem - errorCode:1100 error:Permission denied portName:'com.apple.iphone.axserver' PID:7988 (
+	0   AXRuntime                           0x00000001d7bf60ac _AXGetPortFromCache + 796
+	1   AXRuntime                           0x00000001d7bfab70 AXUIElementPerformFencedActionWithValue + 700
+	2   UIKit                               0x000000025befb45c 5156CF99-D183-3D5A-844D-3BF027998A81 + 1561692
+	3   libdispatch.dylib                   0x0000000101d04584 _dispatch_call_block_and_release + 32
+	4   libdispatch.dylib                   0x0000000101d1e064 _dispatch_client_callout + 16
+	5   libdispatch.dylib                   0x0000000101d0c91c _dispatch_lane_serial_drain + 796
+	6   libdispatch.dylib                   0x0000000101d0d5a4 _dispatch_lane_invoke + 432
+	7   libdispatch.dylib                   0x0000000101d19894 _dispatch_root_queue_drain_deferred_wlh + 344
+	8   libdispatch.dylib                   0x0000000101d18eb0 _dispatch_workloop_worker_thread + 580
+	9   libsystem_pthread.dylib             0x000000022a47ca0c _pthread_wqthread + 292
+	10  libsystem_pthread.dylib             0x000000022a47caac start_wqthread + 8
+)
+AX Lookup problem - errorCode:1100 error:Permission denied portName:'com.apple.iphone.axserver' PID:7988 (
+	0   AXRuntime                           0x00000001d7bf60ac _AXGetPortFromCache + 796
+	1   AXRuntime                           0x00000001d7bfab70 AXUIElementPerformFencedActionWithValue + 700
+	2   UIKit                               0x000000025befb45c 5156CF99-D183-3D5A-844D-3BF027998A81 + 1561692
+	3   libdispatch.dylib                   0x0000000101d04584 _dispatch_call_block_and_release + 32
+	4   libdispatch.dylib                   0x0000000101d1e064 _dispatch_client_callout + 16
+	5   libdispatch.dylib                   0x0000000101d0c91c _dispatch_lane_serial_drain + 796
+	6   libdispatch.dylib                   0x0000000101d0d5a4 _dispatch_lane_invoke + 432
+	7   libdispatch.dylib                   0x0000000101d19894 _dispatch_root_queue_drain_deferred_wlh + 344
+	8   libdispatch.dylib                   0x0000000101d18eb0 _dispatch_workloop_worker_thread + 580
+	9   libsystem_pthread.dylib             0x000000022a47ca0c _pthread_wqthread + 292
+	10  libsystem_pthread.dylib             0x000000022a47caac start_wqthread + 8
+)
+AX Lookup problem - errorCode:1100 error:Permission denied portName:'com.apple.iphone.axserver' PID:7988 (
+	0   AXRuntime                           0x00000001d7bf60ac _AXGetPortFromCache + 796
+	1   AXRuntime                           0x00000001d7bfab70 AXUIElementPerformFencedActionWithValue + 700
+	2   UIKit                               0x000000025befb45c 5156CF99-D183-3D5A-844D-3BF027998A81 + 1561692
+	3   libdispatch.dylib                   0x0000000101d04584 _dispatch_call_block_and_release + 32
+	4   libdispatch.dylib                   0x0000000101d1e064 _dispatch_client_callout + 16
+	5   libdispatch.dylib                   0x0000000101d0c91c _dispatch_lane_serial_drain + 796
+	6   libdispatch.dylib                   0x0000000101d0d5a4 _dispatch_lane_invoke + 432
+	7   libdispatch.dylib                   0x0000000101d19894 _dispatch_root_queue_drain_deferred_wlh + 344
+	8   libdispatch.dylib                   0x0000000101d18eb0 _dispatch_workloop_worker_thread + 580
+	9   libsystem_pthread.dylib             0x000000022a47ca0c _pthread_wqthread + 292
+	10  libsystem_pthread.dylib             0x000000022a47caac start_wqthread + 8
+)
+flutter: PhotoUpload: Button tapped, calling _saveAndContinue
+flutter: PhotoUpload: Continue button clicked
+flutter: PhotoUpload: 2 photos to upload
+flutter: PhotoUpload: Starting upload for user 40152qILi6WbEAVNYIn38yQ5qVi1
+flutter: PhotoUpload: Uploading photo 0
+App is being debugged, do not track this hang
+Hang detected: 0.26s (debugger attached, not reporting)
+GTMSessionFetcher 0x14199e580 (https://firebasestorage.googleapis.com:443/v0/b/cupid-e5874.firebasestorage.app/o/profileImages%2F40152qILi6WbEAVNYIn38yQ5qVi1%2Fphoto_0.jpg) was already running
+flutter: PhotoUpload: Photo 0 uploaded: https://firebasestorage.googleapis.com/v0/b/cupid-e5874.firebasestorage.app/o/profileImages%2F40152qILi6WbEAVNYIn38yQ5qVi1%2Fphoto_0.jpg?alt=media&token=7c9e2c79-4507-4b96-8cee-baf6f9510180
+flutter: PhotoUpload: Uploading photo 1
+App is being debugged, do not track this hang
+Hang detected: 8.55s (debugger attached, not reporting)
+flutter: PhotoUpload: Photo 1 uploaded: https://firebasestorage.googleapis.com/v0/b/cupid-e5874.firebasestorage.app/o/profileImages%2F40152qILi6WbEAVNYIn38yQ5qVi1%2Fphoto_1.jpg?alt=media&token=c513de03-90c0-46ea-8e40-79e173261e09
+flutter: PhotoUpload: All 2 photos uploaded, storing in provider
+flutter: PhotoUpload: Navigating to interests screen
+FlutterSemanticsScrollView implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.

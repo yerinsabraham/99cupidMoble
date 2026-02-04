@@ -71,13 +71,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     if (success) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Account created! Let\'s set up your profile.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        // New users always go to onboarding
+        // Silently navigate to onboarding - no success message yet
+        // User will see success after completing profile setup
         context.go('/onboarding/setup');
       }
     } else {

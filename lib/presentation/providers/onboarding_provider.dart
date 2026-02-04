@@ -7,6 +7,9 @@ class OnboardingData {
   final String? bio;
   final int? age;
   final String? gender;
+  final String? lookingFor;
+  final int? ageRangeMin;
+  final int? ageRangeMax;
   final String? location;
   final List<String>? photoUrls;
   final List<String>? interests;
@@ -16,6 +19,9 @@ class OnboardingData {
     this.bio,
     this.age,
     this.gender,
+    this.lookingFor,
+    this.ageRangeMin,
+    this.ageRangeMax,
     this.location,
     this.photoUrls,
     this.interests,
@@ -26,6 +32,9 @@ class OnboardingData {
     String? bio,
     int? age,
     String? gender,
+    String? lookingFor,
+    int? ageRangeMin,
+    int? ageRangeMax,
     String? location,
     List<String>? photoUrls,
     List<String>? interests,
@@ -35,6 +44,9 @@ class OnboardingData {
       bio: bio ?? this.bio,
       age: age ?? this.age,
       gender: gender ?? this.gender,
+      lookingFor: lookingFor ?? this.lookingFor,
+      ageRangeMin: ageRangeMin ?? this.ageRangeMin,
+      ageRangeMax: ageRangeMax ?? this.ageRangeMax,
       location: location ?? this.location,
       photoUrls: photoUrls ?? this.photoUrls,
       interests: interests ?? this.interests,
@@ -49,10 +61,17 @@ class OnboardingData {
       'bio': bio ?? '',
       'age': age ?? 0,
       'gender': gender ?? '',
+      'lookingFor': lookingFor ?? 'everyone',
       'location': location ?? '',
       'photos': photoUrls ?? [],
       'photoURL': (photoUrls != null && photoUrls!.isNotEmpty) ? photoUrls![0] : null,
       'interests': interests ?? [],
+      'preferences': {
+        'ageRange': {
+          'min': ageRangeMin ?? 18,
+          'max': ageRangeMax ?? 50,
+        },
+      },
       'profileSetupComplete': true,
     };
   }
@@ -67,6 +86,9 @@ class OnboardingNotifier extends Notifier<OnboardingData> {
     required String bio,
     required int age,
     required String gender,
+    required String lookingFor,
+    required int ageRangeMin,
+    required int ageRangeMax,
     required String location,
   }) {
     state = state.copyWith(
@@ -74,6 +96,9 @@ class OnboardingNotifier extends Notifier<OnboardingData> {
       bio: bio,
       age: age,
       gender: gender,
+      lookingFor: lookingFor,
+      ageRangeMin: ageRangeMin,
+      ageRangeMax: ageRangeMax,
       location: location,
     );
   }

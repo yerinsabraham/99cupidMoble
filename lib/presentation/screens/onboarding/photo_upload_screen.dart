@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/services/auth_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../widgets/common/app_button.dart';
@@ -54,7 +55,7 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
   Future<String> _uploadPhoto(File photo, String userId, int index) async {
     final storageRef = FirebaseStorage.instance
         .ref()
-        .child('users/$userId/photo_$index.jpg');
+        .child('profileImages/$userId/photo_$index.jpg');
     
     await storageRef.putFile(photo);
     return await storageRef.getDownloadURL();
@@ -78,10 +79,18 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
     setState(() => _isUploading = true);
 
     try {
-      final user = ref.read(firebaseUserProvider).value;
+      // Get current user from Firebase Auth directly
+      final authService = ref.read(authServiceProvider);
+      final user = authService.currentUser;
       
       if (user == null) {
         debugPrint('PhotoUpload: No user found!');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please log in again')),
+          );
+          context.go('/login');
+        }
         return;
       }
 
@@ -139,12 +148,30 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
           'Add Photos',
           style: TextStyle(color: AppColors.deepPlum),
         ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final authService = AuthService();
+              await authService.signOut();
+              if (mounted) context.go('/login');
+            },
+            child: const Text(
+              'Log Out',
+              style: TextStyle(
+                color: AppColors.cupidPink,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Progress indicator
-            Padding(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // Progress indicator
+                Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,9 +275,44 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                   ),
                 ],
               ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          // Loading overlay when uploading
+          if (_isUploading)
+            Container(
+              color: Colors.black54,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.cupidPink),
+                      strokeWidth: 3,
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Uploading photos...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please wait',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
