@@ -383,7 +383,7 @@ class _SwipeCardState extends State<SwipeCard> with SingleTickerProviderStateMix
                         ),
                         
                         // Location
-                        if (location.isNotEmpty) ...[
+                        if (widget.profile.showDistance && location.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Row(
                             children: [

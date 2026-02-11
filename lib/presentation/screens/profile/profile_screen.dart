@@ -10,6 +10,7 @@ import '../../../data/models/user_model.dart';
 import '../../../core/constants/firebase_collections.dart';
 import '../../../data/services/auth_service.dart';
 import '../../widgets/heart_loader.dart';
+import '../../widgets/common/app_dialog.dart';
 
 /// ProfileScreen - User's own profile matching web app ProfilePageV2.jsx
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -56,13 +57,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _handleLogout() async {
-    try {
-      await _authService.signOut();
-      if (mounted) {
-        context.go('/login');
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Log Out',
+      content: 'Are you sure you want to log out?',
+      confirmText: 'Log Out',
+    );
+
+    if (confirmed) {
+      try {
+        await _authService.signOut();
+        if (mounted) {
+          context.go('/login');
+        }
+      } catch (e) {
+        debugPrint('Error logging out: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to log out. Please try again.'),
+            ),
+          );
+        }
       }
-    } catch (e) {
-      debugPrint('Error logging out: $e');
     }
   }
 
@@ -308,6 +325,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               right: 0,
                               child: GestureDetector(
                                 onTap: () => context.push('/edit-profile'),
+                                behavior: HitTestBehavior.opaque,
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(

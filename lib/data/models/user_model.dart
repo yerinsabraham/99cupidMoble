@@ -45,6 +45,11 @@ class UserModel {
   final bool isAdmin;
   final String accountStatus;
 
+  // Privacy settings
+  final bool showOnlineStatus;
+  final bool showDistance;
+  final DateTime? lastSeen;
+
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime lastActiveAt;
@@ -80,6 +85,9 @@ class UserModel {
     this.reportedBy = const [],
     this.isAdmin = false,
     this.accountStatus = 'active',
+    this.showOnlineStatus = true,
+    this.showDistance = true,
+    this.lastSeen,
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? lastActiveAt,
@@ -120,6 +128,11 @@ class UserModel {
       'reportedBy': reportedBy,
       'isAdmin': isAdmin,
       'accountStatus': accountStatus,
+      'privacy': {
+        'showOnlineStatus': showOnlineStatus,
+        'showDistance': showDistance,
+      },
+      'lastSeen': lastSeen?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'lastActiveAt': lastActiveAt.toIso8601String(),
@@ -177,6 +190,9 @@ class UserModel {
       reportedBy: List<String>.from(data['reportedBy'] ?? []),
       isAdmin: data['isAdmin'] ?? false,
       accountStatus: data['accountStatus'] ?? 'active',
+      showOnlineStatus: data['privacy']?['showOnlineStatus'] ?? true,
+      showDistance: data['privacy']?['showDistance'] ?? true,
+      lastSeen: _parseTimestamp(data['lastSeen']),
       createdAt: _parseTimestamp(data['createdAt']) ?? DateTime.now(),
       updatedAt: _parseTimestamp(data['updatedAt']) ?? DateTime.now(),
       lastActiveAt: _parseTimestamp(data['lastActiveAt']) ?? DateTime.now(),
@@ -248,6 +264,9 @@ class UserModel {
     List<String>? blockedUsers,
     List<String>? blockedByUsers,
     List<String>? reportedBy,
+    bool? showOnlineStatus,
+    bool? showDistance,
+    DateTime? lastSeen,
     bool? isAdmin,
     String? accountStatus,
     DateTime? createdAt,
@@ -285,6 +304,9 @@ class UserModel {
       blockedUsers: blockedUsers ?? this.blockedUsers,
       blockedByUsers: blockedByUsers ?? this.blockedByUsers,
       reportedBy: reportedBy ?? this.reportedBy,
+      showOnlineStatus: showOnlineStatus ?? this.showOnlineStatus,
+      showDistance: showDistance ?? this.showDistance,
+      lastSeen: lastSeen ?? this.lastSeen,
       isAdmin: isAdmin ?? this.isAdmin,
       accountStatus: accountStatus ?? this.accountStatus,
       createdAt: createdAt ?? this.createdAt,

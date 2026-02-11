@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconly/iconly.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/common/app_dialog.dart';
 
 /// EditProfileScreen - Edit user profile
 /// Ported from web app EditProfilePage.jsx
@@ -148,24 +149,53 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     final source = await showDialog<ImageSource>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Photo'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Add Photo',
+            style: TextStyle(
+              color: isDark ? Colors.white : AppColors.deepPlum,
+              fontWeight: FontWeight.bold,
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
-            ),
-          ],
-        ),
-      ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(
+                  Icons.camera_alt,
+                  color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.cupidPink,
+                ),
+                title: Text(
+                  'Camera',
+                  style: TextStyle(
+                    color: isDark ? Colors.white.withOpacity(0.87) : AppColors.grey900,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.photo_library,
+                  color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.cupidPink,
+                ),
+                title: Text(
+                  'Gallery',
+                  style: TextStyle(
+                    color: isDark ? Colors.white.withOpacity(0.87) : AppColors.grey900,
+                  ),
+                ),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
     );
 
     if (source == null) return;
@@ -178,7 +208,36 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         imageQuality: 85,
       );
 
-      if (image == null) return;
+      if (image == null) {
+        // User cancelled or permissions denied
+        // Show helpful message for permission issues
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                source == ImageSource.camera
+                    ? 'Camera access required. Please allow camera permissions in Settings.'
+                    : 'Photo library access required. Please allow photo permissions in Settings.',
+              ),
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: 'Settings',
+                onPressed: () {
+                  // On iOS, users need to manually go to Settings
+                  showAppInfoDialog(
+                    context,
+                    title: 'Enable Permissions',
+                    content: 'To upload photos, please enable ${source == ImageSource.camera ? "Camera" : "Photos"} access in:\n'
+                        '\nSettings > 99cupid > ${source == ImageSource.camera ? "Camera" : "Photos"}',
+                    icon: Icons.settings,
+                  );
+                },
+              ),
+            ),
+          );
+        }
+        return;
+      }
 
       setState(() => _isSaving = true);
 
@@ -197,41 +256,71 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         _photos.add(downloadUrl);
         _isSaving = false;
       });
-    } catch (e) {
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo added successfully'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } on Exception catch (e) {
       debugPrint('Error adding photo: $e');
       setState(() => _isSaving = false);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Failed to upload photo')));
+        // Provide more specific error messages
+        String errorMessage = 'Failed to upload photo';
+        if (e.toString().contains('permission') || e.toString().contains('denied')) {
+          errorMessage = 'Permission denied. Please enable ${source == ImageSource.camera ? "camera" : "photo"} access in Settings.';
+        } else if (e.toString().contains('storage')) {
+          errorMessage = 'Storage error. Please check your device storage.';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
     }
   }
 
   Future<void> _removePhoto(int index) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove Photo'),
-        content: const Text('Are you sure you want to remove this photo?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
+    // Prevent removing the last photo
+    if (_photos.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must have at least one photo'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Remove Photo',
+      content: 'Are you sure you want to remove this photo?',
+      confirmText: 'Remove',
+      isDestructive: true,
     );
 
     if (confirmed == true) {
       setState(() {
         _photos.removeAt(index);
       });
+      
+      // Show reminder to save changes
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Photo removed. Remember to tap Save to keep changes.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -260,6 +349,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_photos.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('At least one photo is required')),
+      );
+      return;
+    }
+
+    if (_interests.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one interest')),
       );
       return;
     }
@@ -345,10 +441,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: GestureDetector(
+        onTap: () {
+          // Dismiss keyboard when tapping outside text fields
+          FocusScope.of(context).unfocus();
+        },
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Photos Section
             _buildSectionHeader(
               'Photos',
@@ -505,6 +606,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 

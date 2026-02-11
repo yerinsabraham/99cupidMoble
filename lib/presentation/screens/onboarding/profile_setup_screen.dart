@@ -20,8 +20,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
-  final _ageController = TextEditingController();
   final _locationController = TextEditingController();
+  DateTime? _dateOfBirth;
   
   String _selectedGender = 'male';
   String _selectedLookingFor = 'everyone';
@@ -45,8 +45,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       // First priority: data from onboarding flow
       if (onboardingData.displayName != null && onboardingData.displayName!.isNotEmpty) {
         _nameController.text = onboardingData.displayName!;
-        _ageController.text = onboardingData.age?.toString() ?? '';
         _bioController.text = onboardingData.bio ?? '';
+        // Don't restore DOB as it's selected via date picker
         
         // Parse location back to country and city
         final location = onboardingData.location ?? '';
@@ -94,7 +94,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   void dispose() {
     _nameController.dispose();
     _bioController.dispose();
-    _ageController.dispose();
     _locationController.dispose();
     _cityController.dispose();
     super.dispose();
@@ -102,6 +101,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   Future<void> _saveAndContinue() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    // Validate date of birth
+    if (_dateOfBirth == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select your date of birth')),
+      );
+      return;
+    }
     
     // Validate location selection
     if (_selectedCountry == null) {
@@ -126,11 +133,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Calculate age from date of birth
+      final now = DateTime.now();
+      int age = now.year - _dateOfBirth!.year;
+      if (now.month < _dateOfBirth!.month ||
+          (now.month == _dateOfBirth!.month && now.day < _dateOfBirth!.day)) {
+        age--;
+      }
+
       // Store profile data in provider (don't save to Firestore yet)
       ref.read(onboardingProvider.notifier).setProfileData(
         displayName: _nameController.text.trim(),
         bio: _bioController.text.trim(),
-        age: int.tryParse(_ageController.text) ?? 0,
+        age: age,
         gender: _selectedGender,
         lookingFor: _selectedLookingFor,
         ageRangeMin: _minAge,
@@ -235,22 +250,90 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Age field
-                AppTextField(
-                  controller: _ageController,
-                  labelText: 'Age',
-                  hintText: 'Enter your age',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your age';
+                // Date of Birth field
+                const Text(
+                  'Date of Birth',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.deepPlum,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime(2000, 1, 1),
+                      firstDate: DateTime(1924),
+                      lastDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+                      builder: (context, child) {
+                        return Theme(
+                          data: Theme.of(context).copyWith(
+                            colorScheme: const ColorScheme.light(
+                              primary: AppColors.cupidPink,
+                              onPrimary: Colors.white,
+                              surface: Colors.white,
+                              onSurface: AppColors.deepPlum,
+                            ),
+                          ),
+                          child: child!,
+                        );
+                      },
+                    );
+                    if (picked != null) {
+                      // Validate age is 18+
+                      final now = DateTime.now();
+                      int age = now.year - picked.year;
+                      if (now.month < picked.month ||
+                          (now.month == picked.month && now.day < picked.day)) {
+                        age--;
+                      }
+                      
+                      if (age < 18) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('You must be at least 18 years old to use this app'),
+                            ),
+                          );
+                        }
+                      } else {
+                        setState(() {
+                          _dateOfBirth = picked;
+                        });
+                      }
                     }
-                    final age = int.tryParse(value);
-                    if (age == null || age < 18 || age > 100) {
-                      return 'Please enter a valid age (18-100)';
-                    }
-                    return null;
                   },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.deepPlum.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _dateOfBirth == null
+                              ? 'Select your date of birth'
+                              : '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: _dateOfBirth == null
+                                ? AppColors.deepPlum.withOpacity(0.5)
+                                : AppColors.deepPlum,
+                          ),
+                        ),
+                        Icon(
+                          Icons.calendar_today,
+                          color: AppColors.cupidPink,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 
@@ -391,6 +474,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 
                 // Country dropdown
                 DropdownButtonFormField<String>(
+                  value: _selectedCountry,
                   dropdownColor: Colors.white,
                   style: const TextStyle(
                     color: AppColors.deepPlum,
@@ -471,6 +555,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   if (_cityHasDropdown)
                     DropdownButtonFormField<String>(
                       key: ValueKey(_selectedCountry),
+                      value: _selectedCity,
                       dropdownColor: Colors.white,
                       style: const TextStyle(
                         color: AppColors.deepPlum,

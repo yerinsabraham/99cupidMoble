@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +11,7 @@ import '../../../core/constants/firebase_collections.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../common/policy_webview_screen.dart';
 
 /// SignUp Screen - User registration
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -26,6 +28,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _acceptedTerms = false;
 
   @override
   void dispose() {
@@ -59,21 +62,138 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
   }
 
+  void _openPolicyPage(String title, String url) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PolicyWebViewScreen(
+          title: title,
+          url: url,
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please accept the Terms & Conditions to continue'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    final email = _emailController.text.trim();
+    
     final success = await ref
         .read(authNotifierProvider.notifier)
         .signUpWithEmail(
-          email: _emailController.text.trim(),
+          email: email,
           password: _passwordController.text,
         );
 
     if (success) {
       if (mounted) {
-        // Silently navigate to onboarding - no success message yet
-        // User will see success after completing profile setup
-        context.go('/onboarding/setup');
+        // Show verification email notification
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.mark_email_read,
+                    color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.cupidPink,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Verify Your Email',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.deepPlum,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'A verification email has been sent to:',
+                    style: TextStyle(
+                      color: isDark ? Colors.white.withOpacity(0.7) : AppColors.grey600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    email,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.deepPlum,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Please check your inbox and verify your email address. '
+                    'If you don\'t see the email, check your spam folder.',
+                    style: TextStyle(
+                      color: isDark ? Colors.white.withOpacity(0.7) : AppColors.grey600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.cupidPink.withOpacity(isDark ? 0.15 : 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.cupidPink,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Make sure the email address is correct',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white.withOpacity(0.8) : AppColors.grey700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                AppButton(
+                  text: 'Continue',
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.go('/onboarding/welcome');
+                  },
+                ),
+              ],
+            );
+          },
+        );
       }
     } else {
       if (mounted) {
@@ -98,9 +218,29 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (success) {
       await _navigateAfterAuth();
     } else {
-      if (mounted) {
-        final errorMessage = ref.read(authNotifierProvider).error ?? 
-            'Google sign-in failed. Please try again.';
+      // Only show error if there's an actual error (not user cancellation)
+      final errorMessage = ref.read(authNotifierProvider).error;
+      if (mounted && errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleAppleSignUp() async {
+    final success = await ref.read(authNotifierProvider.notifier).signInWithApple();
+    
+    if (success) {
+      await _navigateAfterAuth();
+    } else {
+      // Only show error if there's an actual error (not user cancellation)
+      final errorMessage = ref.read(authNotifierProvider).error;
+      if (mounted && errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -163,7 +303,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         if (value == null || value.isEmpty) {
                           return AppStrings.emailRequired;
                         }
-                        if (!value.contains('@')) {
+                        // Enhanced email validation
+                        final emailRegex = RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        );
+                        if (!emailRegex.hasMatch(value.trim())) {
+                          return AppStrings.invalidEmail;
+                        }
+                        // Check for common typos/issues
+                        final trimmedValue = value.trim();
+                        if (trimmedValue.contains('..') || 
+                            trimmedValue.startsWith('.') || 
+                            trimmedValue.endsWith('.')) {
                           return AppStrings.invalidEmail;
                         }
                         return null;
@@ -221,20 +372,89 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please confirm your password';
+                          return AppStrings.confirmPasswordRequired;
                         }
                         if (value != _passwordController.text) {
-                          return 'Passwords do not match';
+                          return AppStrings.passwordsDoNotMatch;
                         }
                         return null;
                       },
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
+
+                    // Terms & Conditions Acceptance
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: Checkbox(
+                            value: _acceptedTerms,
+                            onChanged: (value) {
+                              setState(() {
+                                _acceptedTerms = value ?? false;
+                              });
+                            },
+                            activeColor: AppColors.cupidPink,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.grey700,
+                                  height: 1.4,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'I agree to the '),
+                                  TextSpan(
+                                    text: 'Terms & Conditions',
+                                    style: TextStyle(
+                                      color: AppColors.cupidPink,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _openPolicyPage(
+                                            'Terms & Conditions',
+                                            'https://99cupid.com/terms',
+                                          ),
+                                  ),
+                                  const TextSpan(text: ' and '),
+                                  TextSpan(
+                                    text: 'Privacy Policy',
+                                    style: TextStyle(
+                                      color: AppColors.cupidPink,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _openPolicyPage(
+                                            'Privacy Policy',
+                                            'https://99cupid.com/privacy-policy',
+                                          ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
 
                     // Sign Up Button
                     AppButton(
                       text: AppStrings.signup,
-                      onPressed: authState.isLoading ? null : _handleSignUp,
+                      onPressed: (authState.isLoading || !_acceptedTerms) ? null : _handleSignUp,
                       isLoading: authState.isLoading,
                     ),
                     const SizedBox(height: 24),
@@ -269,6 +489,28 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         width: 24,
                       ),
                       label: Text(AppStrings.continueWithGoogle),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.grey800,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(color: AppColors.grey300),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Apple Sign Up Button
+                    OutlinedButton.icon(
+                      onPressed: authState.isLoading
+                          ? null
+                          : _handleAppleSignUp,
+                      icon: Icon(
+                        Icons.apple,
+                        size: 24,
+                        color: authState.isLoading ? AppColors.grey400 : AppColors.grey800,
+                      ),
+                      label: Text(AppStrings.continueWithApple),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.grey800,
                         padding: const EdgeInsets.symmetric(vertical: 16),

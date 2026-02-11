@@ -8,6 +8,7 @@ import 'package:iconly/iconly.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/services/matching_service.dart';
 import '../../../data/services/swipe_service.dart';
+import '../../../data/services/user_account_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../widgets/swipe/swipe_card_new.dart';
 
@@ -22,6 +23,7 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
     with TickerProviderStateMixin {
   final SwipeService _swipeService = SwipeService();
   final MatchingService _matchingService = MatchingService();
+  final UserAccountService _userAccountService = UserAccountService();
   List<UserModel> _profiles = [];
   bool _isLoading = true;
   int _currentIndex = 0;
@@ -68,6 +70,9 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
   Future<void> _handleSwipe(String targetUserId, bool isLike) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
+
+    // Update lastSeen when user swipes
+    _userAccountService.updateLastSeen();
 
     try {
       if (isLike) {

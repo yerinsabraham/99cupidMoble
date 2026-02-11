@@ -235,7 +235,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                   ],
                 ],
               ),
-              if (widget.profile.location.isNotEmpty) ...[
+             if (widget.profile.showDistance && widget.profile.location.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -401,7 +401,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                 ),
 
                 // Location badge in top-left
-                if (location.isNotEmpty)
+                if (widget.profile.showDistance && location.isNotEmpty)
                   Positioned(
                     top: 16,
                     left: 16,

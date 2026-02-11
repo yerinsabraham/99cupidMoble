@@ -22,94 +22,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  bool _useMockData = true; // Will be loaded from Firebase
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMockDataSetting();
-  }
-
-  // Load mock data setting from Firebase
-  Future<void> _loadMockDataSetting() async {
-    try {
-      final doc = await _firestore
-          .collection('appSettings')
-          .doc('development')
-          .get();
-
-      if (doc.exists && doc.data() != null) {
-        final useMock = doc.data()!['useMockMessages'] as bool? ?? true;
-        if (mounted) {
-          setState(() => _useMockData = useMock);
-        }
-      }
-    } catch (e) {
-      // Permission denied or other errors - use default mock data
-      debugPrint('Using default mock data setting due to: $e');
-      if (mounted) {
-        setState(() => _useMockData = true);
-      }
-    }
-  }
-
-  // Mock chat data for design preview
-  final List<Map<String, dynamic>> _mockChats = [
-    {
-      'id': '1',
-      'userName': 'Jenny',
-      'userPhoto':
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-      'lastMessage': 'Hi! How are you doing today?',
-      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
-      'hasUnread': true,
-    },
-    {
-      'id': '2',
-      'userName': 'Laurent',
-      'userPhoto':
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-      'lastMessage': 'It\'s not always easy, but it\'s definitely worth it.',
-      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
-      'hasUnread': false,
-    },
-    {
-      'id': '3',
-      'userName': 'Lily',
-      'userPhoto':
-          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400',
-      'lastMessage': 'Sounds good! See you then!',
-      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
-      'hasUnread': true,
-    },
-    {
-      'id': '4',
-      'userName': 'Caroline',
-      'userPhoto':
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400',
-      'lastMessage': 'okay sure!!',
-      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
-      'hasUnread': false,
-    },
-    {
-      'id': '5',
-      'userName': 'Marry Jane',
-      'userPhoto':
-          'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400',
-      'lastMessage': 'I\'m doing good.',
-      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
-      'hasUnread': false,
-    },
-    {
-      'id': '6',
-      'userName': 'Jennifer',
-      'userPhoto':
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
-      'lastMessage': 'okay sure!!',
-      'lastMessageAt': DateTime.now().subtract(const Duration(minutes: 5)),
-      'hasUnread': false,
-    },
-  ];
 
   @override
   void dispose() {
@@ -184,62 +96,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: _useMockData
-                    ? _buildMockSearchList(searchController)
-                    : _buildRealSearchList(searchController, currentUserId),
+                child: _buildRealSearchList(searchController, currentUserId),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildMockSearchList(TextEditingController searchController) {
-    final searchQuery = searchController.text.toLowerCase();
-    final filteredChats = _mockChats.where((chat) {
-      final userName = (chat['userName'] as String).toLowerCase();
-      return searchQuery.isEmpty || userName.contains(searchQuery);
-    }).toList();
-
-    if (filteredChats.isEmpty) {
-      return Center(
-        child: Text(
-          'No matching chats',
-          style: TextStyle(color: Colors.grey[600], fontSize: 16),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: filteredChats.length,
-      itemBuilder: (context, index) {
-        final chat = filteredChats[index];
-        final userName = chat['userName'] as String;
-        final userPhoto = chat['userPhoto'] as String;
-        final chatId = chat['id'] as String;
-
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: NetworkImage(userPhoto),
-            backgroundColor: AppColors.warmBlush,
-          ),
-          title: Text(
-            userName,
-            style: const TextStyle(
-              color: AppColors.deepPlum,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-          ),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-          onTap: () {
-            Navigator.pop(context);
-            context.push('/chat/mock_$chatId');
-          },
-        );
-      },
     );
   }
 
@@ -477,68 +339,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                       ],
                     ),
                   ),
-
-                  // Horizontal Scrollable User Avatars
-                  Container(
-                    height: 100,
-                    padding: const EdgeInsets.only(top: 6, bottom: 10),
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _useMockData ? _mockChats.length : 0,
-                      itemBuilder: (context, index) {
-                        if (_useMockData) {
-                          final mock = _mockChats[index];
-                          return GestureDetector(
-                            onTap: () {
-                              // Navigate to mock chat (smooth transition point)
-                              context.push('/chat/mock_${mock['id']}');
-                            },
-                            child: Container(
-                              width: 75,
-                              margin: const EdgeInsets.only(right: 16),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 2.5,
-                                      ),
-                                    ),
-                                    child: CircleAvatar(
-                                      radius: 28,
-                                      backgroundImage: NetworkImage(
-                                        mock['userPhoto'] as String,
-                                      ),
-                                      backgroundColor: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    mock['userName'] as String,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -548,11 +348,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           Expanded(
             child: Stack(
               children: [
-                _useMockData
-                    ? _buildMockMessageList()
-                    : StreamBuilder<List<ChatModel>>(
-                        stream: _getChatsStream(),
-                        builder: (context, snapshot) {
+                StreamBuilder<List<ChatModel>>(
+                  stream: _getChatsStream(),
+                  builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
                             return Container(
@@ -837,134 +635,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     );
   }
 
-  Widget _buildMockMessageList() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(32),
-          topRight: Radius.circular(32),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Handle indicator
-          Container(
-            margin: const EdgeInsets.only(top: 12, bottom: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 8,
-                bottom: 100, // Extra padding for bottom navigation bar
-              ),
-              itemCount: _mockChats.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 0),
-              itemBuilder: (context, index) {
-                final mock = _mockChats[index];
-                final hasUnread = mock['hasUnread'] as bool;
-
-                return InkWell(
-                  onTap: () {
-                    // Navigate to mock chat (smooth transition point)
-                    // When switching to real data, replace 'mock_${mock['id']}' with actual chatId
-                    context.push('/chat/mock_${mock['id']}');
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 8,
-                    ),
-                    child: Row(
-                      children: [
-                        // User Avatar
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundImage: NetworkImage(
-                            mock['userPhoto'] as String,
-                          ),
-                          backgroundColor: AppColors.cupidPink.withOpacity(0.2),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Message Info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      mock['userName'] as String,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.deepPlum,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Text(
-                                    _formatTime(
-                                      mock['lastMessageAt'] as DateTime,
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      mock['lastMessage'] as String,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[600],
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  if (hasUnread)
-                                    const Icon(
-                                      Icons.done_all,
-                                      size: 16,
-                                      color: AppColors.cupidPink,
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   String _formatTime(DateTime time) {
     final now = DateTime.now();

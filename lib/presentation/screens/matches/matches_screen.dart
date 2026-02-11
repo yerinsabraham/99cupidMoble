@@ -21,103 +21,12 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<MatchModel> _matches = [];
   bool _isLoading = true;
-  bool _useMockData = true;
 
-  // Mock matches data
-  final List<Map<String, dynamic>> _mockMatches = [
-    {
-      'id': 'match_1',
-      'name': 'Jenny',
-      'photo': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-      'age': 26,
-      'bio': 'Love hiking and coffee',
-      'distance': '2 miles away',
-      'matchedAt': DateTime.now().subtract(const Duration(hours: 2)),
-      'isNew': true,
-    },
-    {
-      'id': 'match_2',
-      'name': 'Lily',
-      'photo': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400',
-      'age': 24,
-      'bio': 'Yoga enthusiast & traveler',
-      'distance': '5 miles away',
-      'matchedAt': DateTime.now().subtract(const Duration(hours: 12)),
-      'isNew': true,
-    },
-    {
-      'id': 'match_3',
-      'name': 'Caroline',
-      'photo': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400',
-      'age': 28,
-      'bio': 'Foodie & photographer',
-      'distance': '3 miles away',
-      'matchedAt': DateTime.now().subtract(const Duration(days: 1)),
-      'isNew': false,
-    },
-    {
-      'id': 'match_4',
-      'name': 'Jennifer',
-      'photo': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
-      'age': 25,
-      'bio': 'Artist & music lover',
-      'distance': '7 miles away',
-      'matchedAt': DateTime.now().subtract(const Duration(days: 2)),
-      'isNew': false,
-    },
-    {
-      'id': 'match_5',
-      'name': 'Marry Jane',
-      'photo': 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400',
-      'age': 27,
-      'bio': 'Dog mom & runner',
-      'distance': '4 miles away',
-      'matchedAt': DateTime.now().subtract(const Duration(days: 3)),
-      'isNew': false,
-    },
-    {
-      'id': 'match_6',
-      'name': 'Emma',
-      'photo': 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400',
-      'age': 23,
-      'bio': 'Beach lover & dancer',
-      'distance': '6 miles away',
-      'matchedAt': DateTime.now().subtract(const Duration(days: 4)),
-      'isNew': false,
-    },
-  ];
 
   @override
   void initState() {
     super.initState();
-    _loadMockDataSetting();
-  }
-
-  Future<void> _loadMockDataSetting() async {
-    try {
-      final doc = await _firestore
-          .collection('appSettings')
-          .doc('development')
-          .get();
-
-      if (doc.exists && doc.data() != null) {
-        final useMock = doc.data()!['useMockMessages'] as bool? ?? true;
-        if (mounted) {
-          setState(() => _useMockData = useMock);
-        }
-      }
-    } catch (e) {
-      debugPrint('Using default mock data setting due to: $e');
-      if (mounted) {
-        setState(() => _useMockData = true);
-      }
-    }
-    
-    if (_useMockData) {
-      setState(() => _isLoading = false);
-    } else {
-      _loadMatches();
-    }
+    _loadMatches();
   }
 
   Future<void> _loadMatches() async {
@@ -159,8 +68,8 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
       );
     }
 
-    final hasMatches = _useMockData ? _mockMatches.isNotEmpty : _matches.isNotEmpty;
-    final matchCount = _useMockData ? _mockMatches.length : _matches.length;
+    final hasMatches = _matches.isNotEmpty;
+    final matchCount = _matches.length;
 
     return Scaffold(
       backgroundColor: AppColors.softIvory,
@@ -272,9 +181,7 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
             Expanded(
               child: !hasMatches
                   ? _buildEmptyState()
-                  : _useMockData
-                      ? _buildMockMatchesGrid()
-                      : _buildRealMatchesGrid(),
+                  : _buildRealMatchesGrid(),
             ),
           ],
         ),
@@ -361,31 +268,6 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMockMatchesGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.72,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-      ),
-      itemCount: _mockMatches.length,
-      itemBuilder: (context, index) {
-        final match = _mockMatches[index];
-        return _buildMatchCard(
-          name: match['name'] as String,
-          photo: match['photo'] as String,
-          age: match['age'] as int,
-          bio: match['bio'] as String,
-          distance: match['distance'] as String,
-          isNew: match['isNew'] as bool,
-          onTap: () => context.push('/chat/mock_${match['id']}'),
-        );
-      },
     );
   }
 

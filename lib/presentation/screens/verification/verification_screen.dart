@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/services/verification_service.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/common/app_dialog.dart';
 
 /// VerificationScreen - Handle user verification (phone, photo, ID)
 /// Ported from web app VerificationPage.jsx
@@ -157,14 +159,8 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             ),
             const SizedBox(height: 16),
             
-            _buildVerificationCard(
-              type: 'phone',
-              title: 'Phone Verification',
-              description: 'Verify your phone number with SMS code',
-              icon: Icons.phone_android,
-              status: _status['phone'] ?? 'none',
-              onTap: () => _startPhoneVerification(),
-            ),
+            // Phone verification removed - requires real SMS integration
+            // To re-enable, integrate Firebase Phone Auth or Twilio
             
             _buildVerificationCard(
               type: 'photo',
@@ -519,42 +515,97 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     );
   }
 
+  /// Phone verification removed due to mock OTP security risk
+  /// To re-enable: integrate Firebase Phone Auth or Twilio SMS
+  /*
   Future<void> _startPhoneVerification() async {
     final phoneController = TextEditingController();
+    String? errorText;
     
     final phone = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Phone Verification'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Enter your phone number:'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                hintText: '+1 234 567 8900',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.phone),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+              title: Text(
+                'Phone Verification',
+                style: TextStyle(color: isDark ? Colors.white : AppColors.deepPlum),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, phoneController.text),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.cupidPink),
-            child: const Text('Send Code', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Enter your phone number:',
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                    decoration: InputDecoration(
+                      hintText: '+1 234 567 8900',
+                      hintStyle: TextStyle(color: isDark ? Colors.grey[600] : Colors.grey[400]),
+                      border: const OutlineInputBorder(),
+                      prefixIcon: Icon(
+                        Icons.phone,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
+                      errorText: errorText,
+                      helperText: 'Include country code (e.g., +1)',
+                      helperStyle: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey[500] : Colors.grey[600],
+                      ),
+                    ),
+                    onChanged: (value) {
+                      if (errorText != null) {
+                        setState(() => errorText = null);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[700]),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final phone = phoneController.text.trim();
+                    // Validate phone number format
+                    if (phone.isEmpty) {
+                      setState(() => errorText = 'Phone number is required');
+                      return;
+                    }
+                    if (!phone.startsWith('+')) {
+                      setState(() => errorText = 'Phone must start with country code (e.g., +1)');
+                      return;
+                    }
+                    // Remove all non-digit characters except +
+                    final digitsOnly = phone.replaceAll(RegExp(r'[^\d+]'), '');
+                    if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+                      setState(() => errorText = 'Please enter a valid phone number');
+                      return;
+                    }
+                    Navigator.pop(context, phone);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.cupidPink),
+                  child: const Text('Send Code', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     if (phone != null && phone.isNotEmpty) {
@@ -564,72 +615,154 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
-        await _verificationService.submitPhoneVerification(
+        final result = await _verificationService.submitPhoneVerification(
           currentUser.uid,
           phone,
           mockOtp,
         );
         
-        // Show OTP verification dialog
-        _showOTPDialog(phone);
+        if (result['success'] == true) {
+          // Show OTP verification dialog
+          if (mounted) {
+            _showOTPDialog(phone);
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to send verification code. Please try again.'),
+              ),
+            );
+          }
+        }
       }
     }
   }
 
   Future<void> _showOTPDialog(String phone) async {
     final otpController = TextEditingController();
+    String? errorText;
     
     final otp = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Enter Verification Code'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Enter the code sent to $phone'),
-            const SizedBox(height: 4),
-            Text(
-              '(For demo: use 123456)',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: otpController,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, letterSpacing: 8),
-              maxLength: 6,
-              decoration: const InputDecoration(
-                hintText: '000000',
-                border: OutlineInputBorder(),
-                counterText: '',
+      barrierDismissible: false,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+              title: Text(
+                'Enter Verification Code',
+                style: TextStyle(color: isDark ? Colors.white : AppColors.deepPlum),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, otpController.text),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.cupidPink),
-            child: const Text('Verify', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Enter the 6-digit code sent to',
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                  ),
+                  Text(
+                    phone,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : AppColors.deepPlum,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '(For demo: use 123456)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey[500] : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: otpController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 24,
+                      letterSpacing: 8,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                      hintText: '000000',
+                      hintStyle: TextStyle(color: isDark ? Colors.grey[700] : Colors.grey[300]),
+                      border: const OutlineInputBorder(),
+                      counterText: '',
+                      errorText: errorText,
+                    ),
+                    onChanged: (value) {
+                      if (errorText != null) {
+                        setState(() => errorText = null);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[700]),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final otp = otpController.text.trim();
+                    // Validate OTP format
+                    if (otp.isEmpty) {
+                      setState(() => errorText = 'Please enter the verification code');
+                      return;
+                    }
+                    if (otp.length != 6) {
+                      setState(() => errorText = 'Code must be 6 digits');
+                      return;
+                    }
+                    if (!RegExp(r'^\d{6}$').hasMatch(otp)) {
+                      setState(() => errorText = 'Code must contain only numbers');
+                      return;
+                    }
+                    Navigator.pop(context, otp);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.cupidPink),
+                  child: const Text('Verify', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
     if (otp != null && otp.isNotEmpty) {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
+        // Show loading indicator
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(child: LoadingIndicator()),
+          );
+        }
+
         final result = await _verificationService.verifyPhoneOTP(
           currentUser.uid,
           phone,
           otp,
         );
+
+        // Close loading indicator
+        if (mounted) {
+          Navigator.pop(context);
+        }
 
         if (result['success'] == true) {
           _loadVerificationStatus();
@@ -642,51 +775,112 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             );
           }
         } else {
+          // Provide user-friendly error messages
+          String errorMessage;
+          final error = result['error']?.toString() ?? '';
+          
+          if (error.contains('Invalid OTP') || error.contains('invalid')) {
+            errorMessage = 'The verification code you entered is incorrect. Please try again.';
+          } else if (error.contains('expired') || error.contains('OTP expired')) {
+            errorMessage = 'The verification code has expired. Please request a new code.';
+          } else if (error.contains('No pending verification')) {
+            errorMessage = 'No verification request found. Please start verification again.';
+          } else {
+            errorMessage = 'Verification failed. Please try again or request a new code.';
+          }
+          
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result['error'] ?? 'Verification failed')),
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
             );
           }
         }
       }
     }
   }
+  */
 
   Future<void> _startPhotoVerification() async {
+    // Check camera permission first
+    final cameraStatus = await Permission.camera.status;
+    if (cameraStatus.isDenied) {
+      final result = await Permission.camera.request();
+      if (result.isDenied) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Camera permission is required for verification')),
+          );
+        }
+        return;
+      }
+      if (result.isPermanentlyDenied) {
+        if (mounted) {
+          final openSettings = await showAppConfirmDialog(
+            context,
+            title: 'Camera Permission Required',
+            content: 'Please enable camera access in Settings to take verification photos.',
+            confirmText: 'Open Settings',
+          );
+          if (openSettings == true) {
+            await openAppSettings();
+          }
+        }
+        return;
+      }
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Photo Verification'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.camera_alt, size: 60, color: AppColors.cupidPink),
-            const SizedBox(height: 16),
-            const Text(
-              'Take a selfie to verify your identity',
-              textAlign: TextAlign.center,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+          title: Text(
+            'Photo Verification',
+            style: TextStyle(color: isDark ? Colors.white : AppColors.deepPlum),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.camera_alt, size: 60, color: AppColors.cupidPink),
+              const SizedBox(height: 16),
+              Text(
+                'Take a selfie to verify your identity',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Make sure your face is clearly visible and well-lit.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[700]),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Make sure your face is clearly visible and well-lit.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.cupidPink),
+              icon: const Icon(Icons.camera_alt, color: Colors.white),
+              label: const Text('Take Selfie', style: TextStyle(color: Colors.white)),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.cupidPink),
-            icon: const Icon(Icons.camera_alt, color: Colors.white),
-            label: const Text('Take Selfie', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirmed == true) {
@@ -739,34 +933,90 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
   }
 
   Future<void> _startIDVerification() async {
+    // Check camera permission first
+    final cameraStatus = await Permission.camera.status;
+    if (cameraStatus.isDenied) {
+      final result = await Permission.camera.request();
+      if (result.isDenied) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Camera permission is required for verification')),
+          );
+        }
+        return;
+      }
+      if (result.isPermanentlyDenied) {
+        if (mounted) {
+          final openSettings = await showAppConfirmDialog(
+            context,
+            title: 'Camera Permission Required',
+            content: 'Please enable camera access in Settings to take ID photos.',
+            confirmText: 'Open Settings',
+          );
+          if (openSettings == true) {
+            await openAppSettings();
+          }
+        }
+        return;
+      }
+    }
+
     final idType = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ID Verification'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Select ID type:'),
-            const SizedBox(height: 12),
-            ListTile(
-              leading: const Icon(Icons.credit_card),
-              title: const Text('Driver\'s License'),
-              onTap: () => Navigator.pop(context, 'drivers_license'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.badge),
-              title: const Text('Passport'),
-              onTap: () => Navigator.pop(context, 'passport'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.card_membership),
-              title: const Text('National ID'),
-              onTap: () => Navigator.pop(context, 'national_id'),
-            ),
-          ],
-        ),
-      ),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+          title: Text(
+            'ID Verification',
+            style: TextStyle(color: isDark ? Colors.white : AppColors.deepPlum),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Select ID type:',
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: Icon(
+                  Icons.credit_card,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                title: Text(
+                  'Driver\'s License',
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                ),
+                onTap: () => Navigator.pop(context, 'drivers_license'),
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.badge,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                title: Text(
+                  'Passport',
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                ),
+                onTap: () => Navigator.pop(context, 'passport'),
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.card_membership,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+                title: Text(
+                  'National ID',
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                ),
+                onTap: () => Navigator.pop(context, 'national_id'),
+              ),
+            ],
+          ),
+        );
+      },
     );
 
     if (idType == null) return;

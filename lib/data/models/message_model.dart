@@ -11,6 +11,9 @@ class MessageModel {
   final String text;
   final DateTime timestamp;
   final bool read;
+  final String? type; // 'text', 'image', 'video', etc.
+  final String? imageUrl; // URL for image messages
+  final String? fileUrl; // URL for file attachments
 
   MessageModel({
     this.id,
@@ -21,6 +24,9 @@ class MessageModel {
     required this.text,
     DateTime? timestamp,
     this.read = false,
+    this.type,
+    this.imageUrl,
+    this.fileUrl,
   }) : timestamp = timestamp ?? DateTime.now();
 
   /// Create from Firestore document
@@ -35,6 +41,9 @@ class MessageModel {
       text: data['text'] ?? '',
       timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       read: data['read'] ?? false,
+      type: data['type'] ?? 'text',
+      imageUrl: data['imageUrl'],
+      fileUrl: data['fileUrl'],
     );
   }
 
@@ -48,8 +57,14 @@ class MessageModel {
       'text': text,
       'timestamp': Timestamp.fromDate(timestamp),
       'read': read,
+      if (type != null) 'type': type,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (fileUrl != null) 'fileUrl': fileUrl,
     };
   }
+
+  /// Check if message is an image
+  bool get isImage => type == 'image' && imageUrl != null;
 
   /// Check if message is from current user
   bool isMine(String currentUserId) {
@@ -77,6 +92,9 @@ class MessageModel {
     String? text,
     DateTime? timestamp,
     bool? read,
+    String? type,
+    String? imageUrl,
+    String? fileUrl,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -87,6 +105,9 @@ class MessageModel {
       text: text ?? this.text,
       timestamp: timestamp ?? this.timestamp,
       read: read ?? this.read,
+      type: type ?? this.type,
+      imageUrl: imageUrl ?? this.imageUrl,
+      fileUrl: fileUrl ?? this.fileUrl,
     );
   }
 }

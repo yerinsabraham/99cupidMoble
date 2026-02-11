@@ -149,7 +149,10 @@ class SwipeService {
         'createdAt': FieldValue.serverTimestamp(),
         'lastMessageAt': null,
         'lastMessage': null,
-        'unreadCount': 0,
+        'unreadCount': {
+          user1Id: 0,
+          user2Id: 0,
+        },
       };
 
       final chatDocRef = await _firestore

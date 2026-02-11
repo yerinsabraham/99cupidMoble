@@ -14,12 +14,16 @@ class AppStrings {
   static const String alreadyHaveAccount = 'Already have an account?';
   static const String signInWithGoogle = 'Sign in with Google';
   static const String continueWithGoogle = 'Continue with Google';
+  static const String signInWithApple = 'Sign in with Apple';
+  static const String continueWithApple = 'Continue with Apple';
   
   // Validation
   static const String emailRequired = 'Email is required';
   static const String invalidEmail = 'Please enter a valid email';
   static const String passwordRequired = 'Password is required';
   static const String passwordTooShort = 'Password must be at least 6 characters';
+  static const String confirmPasswordRequired = 'Please confirm your password';
+  static const String passwordsDoNotMatch = 'Passwords do not match';
   
   // Navigation
   static const String home = 'Home';

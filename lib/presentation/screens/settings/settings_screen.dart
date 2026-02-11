@@ -9,6 +9,8 @@ import '../../../data/services/user_account_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/common/app_dialog.dart';
+import '../common/policy_webview_screen.dart';
 
 /// SettingsScreen - User settings and account management
 /// Ported from web app SettingsPage.jsx
@@ -150,30 +152,88 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  /// Open policy page in webview
+  void _openPolicyPage(String title, String url) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PolicyWebViewScreen(
+          title: title,
+          url: url,
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleDeleteAccount() async {
     final passwordController = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
+        backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Delete Account',
+          style: TextStyle(
+            color: isDark ? Colors.white : AppColors.deepPlum,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'This action cannot be undone. All your data will be permanently deleted.',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(
+                color: isDark ? Colors.red[300] : Colors.red[700],
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 16),
-            const Text('Enter your password to confirm:'),
+            Text(
+              'Enter your password to confirm:',
+              style: TextStyle(
+                color: isDark ? Colors.white.withOpacity(0.87) : AppColors.grey700,
+              ),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: const InputDecoration(
+              style: TextStyle(
+                color: isDark ? Colors.white : AppColors.grey900,
+              ),
+              decoration: InputDecoration(
                 hintText: 'Password',
-                border: OutlineInputBorder(),
+                hintStyle: TextStyle(
+                  color: isDark ? Colors.white.withOpacity(0.5) : AppColors.grey500,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.white.withOpacity(0.3) : AppColors.grey300,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: isDark ? Colors.white.withOpacity(0.3) : AppColors.grey300,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.cupidPink,
+                    width: 2,
+                  ),
+                ),
+                filled: true,
+                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
               ),
             ),
           ],
@@ -181,12 +241,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
+            style: TextButton.styleFrom(
+              foregroundColor: isDark ? Colors.white70 : AppColors.grey600,
+            ),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? Colors.red[300] : Colors.red[700],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -214,25 +280,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _handleLogout() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Log Out'),
-        content: const Text('Are you sure you want to log out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.cupidPink,
-            ),
-            child: const Text('Log Out', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Log Out',
+      content: 'Are you sure you want to log out?',
+      confirmText: 'Log Out',
     );
 
     if (confirmed == true) {
@@ -346,6 +398,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 16),
 
+            // Help & Support Section
+            _buildSectionHeader('Help & Support'),
+            _buildSettingsTile(
+              icon: Icons.shield_outlined,
+              title: 'Community Guidelines',
+              subtitle: 'Learn about our community standards',
+              onTap: () => _openPolicyPage(
+                'Community Guidelines',
+                'https://99cupid.com/community-guidelines',
+              ),
+            ),
+            _buildSettingsTile(
+              icon: Icons.security_outlined,
+              title: 'Safety Tips',
+              subtitle: 'Stay safe while dating online',
+              onTap: () => _openPolicyPage(
+                'Safety Tips',
+                'https://99cupid.com/safety-tips',
+              ),
+            ),
+            _buildSettingsTile(
+              icon: Icons.report_outlined,
+              title: 'Moderation & Reporting',
+              subtitle: 'Report inappropriate behavior',
+              onTap: () => _openPolicyPage(
+                'Moderation & Reporting',
+                'https://99cupid.com/moderation-policy',
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // Data & Legal Section
             _buildSectionHeader('Data & Legal'),
             _buildSettingsTile(
@@ -355,16 +439,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onTap: _handleExportData,
             ),
             _buildSettingsTile(
+              icon: Icons.delete_sweep_outlined,
+              title: 'Data Deletion Policy',
+              subtitle: 'Learn how we handle data deletion',
+              onTap: () => _openPolicyPage(
+                'Data Deletion Policy',
+                'https://99cupid.com/data-deletion',
+              ),
+            ),
+            _buildSettingsTile(
               icon: Icons.description_outlined,
               title: 'Privacy Policy',
               subtitle: 'Read our privacy policy',
-              onTap: () {},
+              onTap: () => _openPolicyPage(
+                'Privacy Policy',
+                'https://99cupid.com/privacy-policy',
+              ),
             ),
             _buildSettingsTile(
               icon: Icons.gavel_outlined,
               title: 'Terms of Service',
               subtitle: 'Read our terms of service',
-              onTap: () {},
+              onTap: () => _openPolicyPage(
+                'Terms & Conditions',
+                'https://99cupid.com/terms',
+              ),
             ),
 
             const SizedBox(height: 16),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +11,7 @@ import '../../../core/constants/firebase_collections.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../common/policy_webview_screen.dart';
 
 /// Login Screen - Mobile-optimized authentication UI
 class LoginScreen extends ConsumerStatefulWidget {
@@ -91,9 +93,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (success) {
       await _navigateAfterAuth();
     } else {
-      if (mounted) {
-        final errorMessage = ref.read(authNotifierProvider).error ?? 
-            'Google sign-in failed. Please try again.';
+      // Only show error if there's an actual error (not user cancellation)
+      final errorMessage = ref.read(authNotifierProvider).error;
+      if (mounted && errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -103,6 +105,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
       }
     }
+  }
+
+  Future<void> _handleAppleLogin() async {
+    final success = await ref.read(authNotifierProvider.notifier).signInWithApple();
+    
+    if (success) {
+      await _navigateAfterAuth();
+    } else {
+      // Only show error if there's an actual error (not user cancellation)
+      final errorMessage = ref.read(authNotifierProvider).error;
+      if (mounted && errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  void _openPolicyPage(String title, String url) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PolicyWebViewScreen(
+          title: title,
+          url: url,
+        ),
+      ),
+    );
   }
 
   @override
@@ -244,6 +278,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         side: BorderSide(color: AppColors.grey300),
                       ),
                     ),
+                    const SizedBox(height: 16),
+
+                    // Apple Sign In Button
+                    OutlinedButton.icon(
+                      onPressed: authState.isLoading
+                          ? null
+                          : _handleAppleLogin,
+                      icon: Icon(
+                        Icons.apple,
+                        size: 24,
+                        color: authState.isLoading ? AppColors.grey400 : AppColors.grey800,
+                      ),
+                      label: Text(AppStrings.continueWithApple),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.grey800,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(color: AppColors.grey300),
+                      ),
+                    ),
                     const SizedBox(height: 32),
 
                     // Sign Up Link
@@ -267,6 +323,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Policy Links
+                    Center(
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.grey500,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: TextStyle(
+                                color: AppColors.cupidPink,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => _openPolicyPage(
+                                      'Privacy Policy',
+                                      'https://99cupid.com/privacy-policy',
+                                    ),
+                            ),
+                            const TextSpan(text: '  •  '),
+                            TextSpan(
+                              text: 'Terms & Conditions',
+                              style: TextStyle(
+                                color: AppColors.cupidPink,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => _openPolicyPage(
+                                      'Terms & Conditions',
+                                      'https://99cupid.com/terms',
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),

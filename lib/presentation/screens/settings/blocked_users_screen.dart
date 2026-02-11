@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/services/block_report_service.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/common/app_dialog.dart';
 
 /// BlockedUsersScreen - Manage blocked users
 class BlockedUsersScreen extends ConsumerStatefulWidget {
@@ -45,23 +46,11 @@ class _BlockedUsersScreenState extends ConsumerState<BlockedUsersScreen> {
   }
 
   Future<void> _handleUnblock(String userId, String userName) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Unblock User'),
-        content: Text('Are you sure you want to unblock $userName?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.cupidPink),
-            child: const Text('Unblock', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: 'Unblock User',
+      content: 'Are you sure you want to unblock $userName?',
+      confirmText: 'Unblock',
     );
 
     if (confirmed == true) {

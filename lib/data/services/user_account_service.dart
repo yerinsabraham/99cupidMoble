@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 /// UserAccountService - Handles user account management and deletion
 /// Ported from web app UserAccountService.js
 class UserAccountService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   /// Delete user account permanently
   /// This includes:
@@ -21,12 +23,36 @@ class UserAccountService {
     }
 
     try {
-      // Step 1: Re-authenticate user
-      final credential = EmailAuthProvider.credential(
-        email: user.email!,
-        password: password,
-      );
-      await user.reauthenticateWithCredential(credential);
+      // Step 1: Re-authenticate user based on their sign-in provider
+      final providerData = user.providerData;
+      
+      if (providerData.any((info) => info.providerId == 'google.com')) {
+        // Google Sign-In re-authentication
+        final googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) {
+          return {'success': false, 'error': 'Google sign-in cancelled'};
+        }
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        await user.reauthenticateWithCredential(credential);
+      } else if (providerData.any((info) => info.providerId == 'apple.com')) {
+        // Apple Sign-In re-authentication
+        final appleProvider = AppleAuthProvider();
+        await user.reauthenticateWithProvider(appleProvider);
+      } else {
+        // Email/Password re-authentication
+        if (user.email == null) {
+          return {'success': false, 'error': 'No email found for this account'};
+        }
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: password,
+        );
+        await user.reauthenticateWithCredential(credential);
+      }
 
       // Step 2: Mark user as deleted in Firestore first (soft delete)
       final userRef = _firestore.collection('users').doc(user.uid);
@@ -318,4 +344,57 @@ class UserAccountService {
       return {'success': false, 'error': e.toString()};
     }
   }
+
+  /// Update user's lastSeen timestamp
+  /// Call this when user performs any activity in the app
+  Future<void> updateLastSeen() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'lastSeen': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      // Silently fail - this is not critical
+      // Don't block user from using app if this fails
+    }
+  }
+
+  /// Check if a user is currently online
+  /// User is considered online if lastSeen was within the last 5 minutes
+  Future<bool> isUserOnline(String userId) async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) return false;
+
+      final data = userDoc.data();
+      if (data == null) return false;
+
+      // Check privacy setting
+      final showOnlineStatus = data['privacy']?['showOnlineStatus'] ?? true;
+      if (!showOnlineStatus) return false;
+
+      final lastSeen = data['lastSeen'];
+      if (lastSeen == null) return false;
+
+      DateTime lastSeenTime;
+      if (lastSeen is Timestamp) {
+        lastSeenTime = lastSeen.toDate();
+      } else if (lastSeen is String) {
+        lastSeenTime = DateTime.parse(lastSeen);
+      } else {
+        return false;
+      }
+
+      final now = DateTime.now();
+      final difference = now.difference(lastSeenTime);
+      
+      // User is online if lastSeen was within last 5 minutes
+      return difference.inMinutes < 5;
+    } catch (e) {
+      return false;
+    }
+  }
 }
+

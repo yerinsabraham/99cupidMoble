@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 
@@ -142,10 +143,44 @@ class AuthNotifier extends Notifier<AuthState> {
       
       state = state.copyWith(isLoading: false);
       return true;
+    } on UserCancelledException catch (_) {
+      // User cancelled - this is not an error, just reset loading state
+      state = state.copyWith(isLoading: false, error: null);
+      return false;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         error: 'Google sign-in failed. Please try again.',
+      );
+      return false;
+    }
+  }
+
+  /// Sign in with Apple
+  /// Returns true if successful, false if failed (check state.error for message)
+  Future<bool> signInWithApple() async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      
+      await _authService.signInWithApple();
+      
+      state = state.copyWith(isLoading: false);
+      return true;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // User cancelled or other Apple-specific error
+      if (e.code == AuthorizationErrorCode.canceled) {
+        state = state.copyWith(isLoading: false, error: null);
+        return false;
+      }
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Apple sign-in failed. Please try again.',
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Apple sign-in failed. Please try again.',
       );
       return false;
     }

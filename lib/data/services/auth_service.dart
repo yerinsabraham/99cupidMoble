@@ -1,9 +1,20 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 import '../models/user_model.dart';
 import '../../core/constants/firebase_collections.dart';
+
+/// Custom exception for user-cancelled sign-in
+class UserCancelledException implements Exception {
+  final String message;
+  UserCancelledException([this.message = 'User cancelled the operation']);
+  
+  @override
+  String toString() => message;
+}
 
 /// AuthService - Handles Firebase Authentication
 /// Mirrors web app auth logic exactly
@@ -100,7 +111,8 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        throw Exception('Google sign-in cancelled');
+        // User cancelled the sign-in flow
+        throw UserCancelledException('Google sign-in cancelled by user');
       }
 
       // Obtain auth details
@@ -149,6 +161,89 @@ class AuthService {
     } catch (e) {
       if (kDebugMode) {
         print('❌ Google sign-in error: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Sign in with Apple
+  Future<UserCredential> signInWithApple() async {
+    try {
+      // Check if Apple Sign In is available (iOS 13+ or macOS)
+      if (!kIsWeb && !Platform.isIOS && !Platform.isMacOS) {
+        throw Exception('Apple Sign In is only available on iOS and macOS');
+      }
+
+      // Request Apple ID credential
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      // Create OAuth credential for Firebase
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      // Sign in to Firebase
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      final user = userCredential.user;
+
+      if (user == null) throw Exception('Apple sign-in failed');
+
+      // Check if user document exists
+      final userDoc = await _firestore
+          .collection(FirebaseCollections.users)
+          .doc(user.uid)
+          .get();
+
+      // Create user document if it doesn't exist
+      if (!userDoc.exists) {
+        // Extract display name from Apple ID credential
+        // Apple only provides name on first sign-in, so we need to handle it carefully
+        String? displayName;
+        if (appleCredential.givenName != null || appleCredential.familyName != null) {
+          final givenName = appleCredential.givenName ?? '';
+          final familyName = appleCredential.familyName ?? '';
+          displayName = '$givenName $familyName'.trim();
+          
+          // If we got a name from Apple, also update the Firebase Auth profile
+          if (displayName.isNotEmpty) {
+            await user.updateDisplayName(displayName);
+            await user.reload();
+          }
+        }
+        
+        // Fallback: use email username if no name provided
+        if (displayName == null || displayName.isEmpty) {
+          displayName = user.displayName ?? user.email?.split('@').first;
+        }
+
+        final userModel = UserModel.fromAuthUser(
+          user.uid,
+          user.email ?? '',
+          displayName: displayName,
+          photoURL: user.photoURL,
+          emailVerified: user.emailVerified,
+        );
+
+        await _firestore
+            .collection(FirebaseCollections.users)
+            .doc(user.uid)
+            .set(userModel.toFirestore());
+      }
+
+      if (kDebugMode) {
+        print('✅ Apple sign-in successful: ${user.email}');
+      }
+
+      return userCredential;
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Apple sign-in error: $e');
       }
       rethrow;
     }
@@ -253,7 +348,11 @@ class AuthService {
   /// Sign out
   Future<void> signOut() async {
     try {
-      await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
+      await Future.wait([
+        _auth.signOut(),
+        _googleSignIn.signOut(),
+        // Apple doesn't require explicit sign-out
+      ]);
 
       if (kDebugMode) {
         print('✅ User signed out');
