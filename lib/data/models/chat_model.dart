@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart' show debugPrint;
 
 /// ChatModel - Represents a chat conversation between two users
 /// Ported from web app messaging system
@@ -29,24 +30,76 @@ class ChatModel {
     this.lastMessageAt,
     Map<String, int>? unreadCount,
     DateTime? createdAt,
-  })  : unreadCount = unreadCount ?? {},
-        createdAt = createdAt ?? DateTime.now();
+  }) : unreadCount = unreadCount ?? {},
+       createdAt = createdAt ?? DateTime.now();
 
   /// Create from Firestore document
   factory ChatModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final participants = List<String>.from(data['participants'] ?? []);
+
+    // Handle both old and new data structures
+    String user1Id;
+    String user2Id;
+    String user1Name;
+    String user2Name;
+    String? user1Photo;
+    String? user2Photo;
+
+    if (data.containsKey('participantNames')) {
+      // New structure with participantNames and participantPhotos maps
+      user1Id = participants.isNotEmpty ? participants[0] : '';
+      user2Id = participants.length > 1 ? participants[1] : '';
+
+      final participantNames =
+          data['participantNames'] as Map<String, dynamic>? ?? {};
+      user1Name = participantNames[user1Id]?.toString() ?? 'User';
+      user2Name = participantNames[user2Id]?.toString() ?? 'User';
+
+      final participantPhotos =
+          data['participantPhotos'] as Map<String, dynamic>? ?? {};
+      user1Photo = participantPhotos[user1Id]?.toString();
+      user2Photo = participantPhotos[user2Id]?.toString();
+    } else {
+      // Old structure with user1Id, user2Id, etc.
+      user1Id = data['user1Id'] ?? '';
+      user2Id = data['user2Id'] ?? '';
+      user1Name = data['user1Name'] ?? 'User';
+      user2Name = data['user2Name'] ?? 'User';
+      user1Photo = data['user1Photo'];
+      user2Photo = data['user2Photo'];
+    }
+
+    // Handle unreadCount - it can be a Map or null
+    Map<String, int> unreadCount = {};
+    if (data['unreadCount'] != null) {
+      try {
+        final unreadData = data['unreadCount'];
+        if (unreadData is Map) {
+          unreadCount = Map<String, int>.from(
+            unreadData.map(
+              (key, value) =>
+                  MapEntry(key.toString(), (value is int) ? value : 0),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('Error parsing unreadCount: $e');
+      }
+    }
+
     return ChatModel(
       id: doc.id,
-      participants: List<String>.from(data['participants'] ?? []),
-      user1Id: data['user1Id'] ?? '',
-      user2Id: data['user2Id'] ?? '',
-      user1Name: data['user1Name'] ?? 'User',
-      user2Name: data['user2Name'] ?? 'User',
-      user1Photo: data['user1Photo'],
-      user2Photo: data['user2Photo'],
+      participants: participants,
+      user1Id: user1Id,
+      user2Id: user2Id,
+      user1Name: user1Name,
+      user2Name: user2Name,
+      user1Photo: user1Photo,
+      user2Photo: user2Photo,
       lastMessage: data['lastMessage'],
       lastMessageAt: (data['lastMessageAt'] as Timestamp?)?.toDate(),
-      unreadCount: Map<String, int>.from(data['unreadCount'] ?? {}),
+      unreadCount: unreadCount,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -55,14 +108,12 @@ class ChatModel {
   Map<String, dynamic> toFirestore() {
     return {
       'participants': participants,
-      'user1Id': user1Id,
-      'user2Id': user2Id,
-      'user1Name': user1Name,
-      'user2Name': user2Name,
-      'user1Photo': user1Photo,
-      'user2Photo': user2Photo,
+      'participantNames': {user1Id: user1Name, user2Id: user2Name},
+      'participantPhotos': {user1Id: user1Photo, user2Id: user2Photo},
       'lastMessage': lastMessage,
-      'lastMessageAt': lastMessageAt != null ? Timestamp.fromDate(lastMessageAt!) : null,
+      'lastMessageAt': lastMessageAt != null
+          ? Timestamp.fromDate(lastMessageAt!)
+          : null,
       'unreadCount': unreadCount,
       'createdAt': Timestamp.fromDate(createdAt),
     };

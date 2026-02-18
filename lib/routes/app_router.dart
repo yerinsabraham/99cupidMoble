@@ -14,6 +14,7 @@ import '../presentation/screens/chat/chat_screen.dart';
 import '../presentation/screens/settings/settings_screen.dart';
 import '../presentation/screens/settings/edit_profile_screen.dart';
 import '../presentation/screens/settings/blocked_users_screen.dart';
+import '../presentation/screens/settings/account_management_screen.dart';
 import '../presentation/screens/verification/verification_screen.dart';
 import '../presentation/screens/admin/admin_dashboard_screen.dart';
 import '../presentation/screens/profile/user_profile_screen.dart';
@@ -30,10 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/signup',
         builder: (context, state) => const SignUpScreen(),
@@ -58,10 +56,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/onboarding/interests',
         builder: (context, state) => const InterestsScreen(),
       ),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const MainScreen(),
-      ),
+      GoRoute(path: '/home', builder: (context, state) => const MainScreen()),
       GoRoute(
         path: '/chat/:chatId',
         builder: (context, state) {
@@ -72,6 +67,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/account-management',
+        builder: (context, state) => const AccountManagementScreen(),
       ),
       GoRoute(
         path: '/edit-profile',

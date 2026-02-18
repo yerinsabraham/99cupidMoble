@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconly/iconly.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../data/services/user_account_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
@@ -22,7 +21,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  final UserAccountService _accountService = UserAccountService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _isLoading = true;
@@ -124,159 +122,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _handleExportData() async {
-    final json = await _accountService.exportUserDataAsJson();
-    if (json != null) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Your Data'),
-          content: SingleChildScrollView(
-            child: Text(
-              json,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to export data')));
-    }
-  }
-
   /// Open policy page in webview
   void _openPolicyPage(String title, String url) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PolicyWebViewScreen(
-          title: title,
-          url: url,
-        ),
+        builder: (context) => PolicyWebViewScreen(title: title, url: url),
       ),
     );
-  }
-
-  Future<void> _handleDeleteAccount() async {
-    final passwordController = TextEditingController();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          'Delete Account',
-          style: TextStyle(
-            color: isDark ? Colors.white : AppColors.deepPlum,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'This action cannot be undone. All your data will be permanently deleted.',
-              style: TextStyle(
-                color: isDark ? Colors.red[300] : Colors.red[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Enter your password to confirm:',
-              style: TextStyle(
-                color: isDark ? Colors.white.withOpacity(0.87) : AppColors.grey700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              style: TextStyle(
-                color: isDark ? Colors.white : AppColors.grey900,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Password',
-                hintStyle: TextStyle(
-                  color: isDark ? Colors.white.withOpacity(0.5) : AppColors.grey500,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.white.withOpacity(0.3) : AppColors.grey300,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.white.withOpacity(0.3) : AppColors.grey300,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.cupidPink,
-                    width: 2,
-                  ),
-                ),
-                filled: true,
-                fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            style: TextButton.styleFrom(
-              foregroundColor: isDark ? Colors.white70 : AppColors.grey600,
-            ),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isDark ? Colors.red[300] : Colors.red[700],
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && passwordController.text.isNotEmpty) {
-      final result = await _accountService.deleteAccount(
-        passwordController.text,
-      );
-
-      if (result['success'] == true) {
-        if (mounted) {
-          context.go('/login');
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['error'] ?? 'Failed to delete account'),
-            ),
-          );
-        }
-      }
-    }
   }
 
   Future<void> _handleLogout() async {
@@ -290,6 +143,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirmed == true) {
       await ref.read(authNotifierProvider.notifier).signOut();
       if (mounted) {
+        // Navigate to login screen
         context.go('/login');
       }
     }
@@ -430,14 +284,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 16),
 
-            // Data & Legal Section
-            _buildSectionHeader('Data & Legal'),
+            // Account Management Section
+            _buildSectionHeader('Account Management'),
             _buildSettingsTile(
-              icon: Icons.download_outlined,
-              title: 'Export Data',
-              subtitle: 'Download all your data',
-              onTap: _handleExportData,
+              icon: Icons.manage_accounts_outlined,
+              title: 'Advanced Account Settings',
+              subtitle: 'Export data, manage account deletion',
+              onTap: () => context.push('/account-management'),
             ),
+
+            const SizedBox(height: 16),
+
+            // Data & Legal Section
+            _buildSectionHeader('Legal'),
             _buildSettingsTile(
               icon: Icons.delete_sweep_outlined,
               title: 'Data Deletion Policy',
@@ -468,22 +327,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 16),
 
-            // Danger Zone
-            _buildSectionHeader('Danger Zone', color: Colors.red),
+            // Sign Out Section
+            _buildSectionHeader('Session'),
             _buildSettingsTile(
               icon: IconlyLight.logout,
               title: 'Log Out',
               subtitle: 'Sign out of your account',
               onTap: _handleLogout,
               iconColor: Colors.orange,
-            ),
-            _buildSettingsTile(
-              icon: Icons.delete_forever_outlined,
-              title: 'Delete Account',
-              subtitle: 'Permanently delete your account and all data',
-              onTap: _handleDeleteAccount,
-              iconColor: Colors.red,
-              textColor: Colors.red,
             ),
 
             const SizedBox(height: 32),

@@ -32,7 +32,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   Future<void> _showSearchUsersDialog(BuildContext context) async {
     final TextEditingController searchController = TextEditingController();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    
+
     if (currentUserId == null) return;
 
     await showDialog(
@@ -73,7 +73,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search by name...',
                   hintStyle: TextStyle(color: Colors.grey[400]),
-                  prefixIcon: const Icon(IconlyLight.search, color: AppColors.cupidPink),
+                  prefixIcon: const Icon(
+                    IconlyLight.search,
+                    color: AppColors.cupidPink,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: Colors.grey[300]!),
@@ -84,7 +87,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.cupidPink, width: 2),
+                    borderSide: const BorderSide(
+                      color: AppColors.cupidPink,
+                      width: 2,
+                    ),
                   ),
                   filled: true,
                   fillColor: Colors.grey[50],
@@ -105,11 +111,16 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     );
   }
 
-  Widget _buildRealSearchList(TextEditingController searchController, String currentUserId) {
+  Widget _buildRealSearchList(
+    TextEditingController searchController,
+    String currentUserId,
+  ) {
     return StreamBuilder<List<ChatModel>>(
       stream: _getChatsStream(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        // Only show loading if we're waiting AND don't have data yet
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
           return const Center(child: LoadingIndicator());
         }
 
@@ -125,7 +136,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         final searchQuery = searchController.text.toLowerCase();
         final chats = snapshot.data!;
         final filteredChats = chats.where((chat) {
-          final otherUserName = chat.getOtherUserName(currentUserId).toLowerCase();
+          final otherUserName = chat
+              .getOtherUserName(currentUserId)
+              .toLowerCase();
           return searchQuery.isEmpty || otherUserName.contains(searchQuery);
         }).toList();
 
@@ -170,7 +183,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   fontSize: 16,
                 ),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+              trailing: const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey,
+              ),
               onTap: () {
                 Navigator.pop(context);
                 context.push('/chat/${chat.id}');
@@ -182,7 +199,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     );
   }
 
-  Future<void> _createOrOpenChat(String otherUserId, String otherUserName, String? otherUserPhoto) async {
+  Future<void> _createOrOpenChat(
+    String otherUserId,
+    String otherUserName,
+    String? otherUserPhoto,
+  ) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
@@ -195,7 +216,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
       String? existingChatId;
       for (var doc in existingChats.docs) {
-        final participants = List<String>.from(doc.data()['participants'] ?? []);
+        final participants = List<String>.from(
+          doc.data()['participants'] ?? [],
+        );
         if (participants.contains(otherUserId)) {
           existingChatId = doc.id;
           break;
@@ -237,10 +260,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       debugPrint('Error creating/opening chat: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -351,258 +371,244 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 StreamBuilder<List<ChatModel>>(
                   stream: _getChatsStream(),
                   builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Container(
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(32),
-                                  topRight: Radius.circular(32),
-                                ),
-                              ),
-                              child: const Center(child: LoadingIndicator()),
-                            );
-                          }
+                    // Only show loading if we're waiting AND don't have data yet
+                    if (snapshot.connectionState == ConnectionState.waiting &&
+                        !snapshot.hasData) {
+                      return Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(32),
+                            topRight: Radius.circular(32),
+                          ),
+                        ),
+                        child: const Center(child: LoadingIndicator()),
+                      );
+                    }
 
-                          if (snapshot.hasError) {
-                            debugPrint('Chat stream error: ${snapshot.error}');
-                          }
+                    if (snapshot.hasError) {
+                      debugPrint('Chat stream error: ${snapshot.error}');
+                    }
 
-                          final chats = snapshot.data ?? [];
+                    final chats = snapshot.data ?? [];
 
-                          // Filter by search query
-                          final filteredChats = chats.where((chat) {
-                            final otherUserName = chat.getOtherUserName(
-                              currentUserId,
-                            );
-                            return otherUserName.toLowerCase().contains(
-                              _searchQuery.toLowerCase(),
-                            );
-                          }).toList();
+                    // Filter by search query
+                    final filteredChats = chats.where((chat) {
+                      final otherUserName = chat.getOtherUserName(
+                        currentUserId,
+                      );
+                      return otherUserName.toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      );
+                    }).toList();
 
-                          return Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(32),
-                                topRight: Radius.circular(32),
-                              ),
+                    return Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(32),
+                          topRight: Radius.circular(32),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          // Handle indicator
+                          Container(
+                            margin: const EdgeInsets.only(top: 12, bottom: 8),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(2),
                             ),
-                            child: Column(
-                              children: [
-                                // Handle indicator
-                                Container(
-                                  margin: const EdgeInsets.only(
-                                    top: 12,
-                                    bottom: 8,
-                                  ),
-                                  width: 40,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
+                          ),
 
-                                if (filteredChats.isEmpty)
-                                  Expanded(
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                          if (filteredChats.isEmpty)
+                            Expanded(
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(24),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.warmBlush,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.chat_bubble_outline,
+                                        size: 60,
+                                        color: AppColors.cupidPink,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Text(
+                                      'No messages yet',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.deepPlum,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Start swiping to find matches\nand begin conversations!',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            Expanded(
+                              child: ListView.separated(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                itemCount: filteredChats.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(height: 0),
+                                itemBuilder: (context, index) {
+                                  final chat = filteredChats[index];
+                                  final otherUserName = chat.getOtherUserName(
+                                    currentUserId,
+                                  );
+                                  final otherUserPhoto = chat.getOtherUserPhoto(
+                                    currentUserId,
+                                  );
+                                  final unreadCount = chat.getUnreadCount(
+                                    currentUserId,
+                                  );
+                                  final hasUnread = unreadCount > 0;
+
+                                  return InkWell(
+                                    onTap: () =>
+                                        context.push('/chat/${chat.id}'),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                        horizontal: 8,
+                                      ),
+                                      child: Row(
                                         children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(24),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.warmBlush,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.chat_bubble_outline,
-                                              size: 60,
-                                              color: AppColors.cupidPink,
-                                            ),
+                                          // User Avatar
+                                          CircleAvatar(
+                                            radius: 28,
+                                            backgroundImage:
+                                                otherUserPhoto != null
+                                                ? NetworkImage(otherUserPhoto)
+                                                : null,
+                                            backgroundColor: AppColors.cupidPink
+                                                .withOpacity(0.2),
+                                            child: otherUserPhoto == null
+                                                ? Text(
+                                                    otherUserName.isNotEmpty
+                                                        ? otherUserName[0]
+                                                              .toUpperCase()
+                                                        : '?',
+                                                    style: const TextStyle(
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          AppColors.cupidPink,
+                                                    ),
+                                                  )
+                                                : null,
                                           ),
-                                          const SizedBox(height: 20),
-                                          const Text(
-                                            'No messages yet',
-                                            style: TextStyle(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.deepPlum,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Start swiping to find matches\nand begin conversations!',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.grey[600],
+                                          const SizedBox(width: 16),
+
+                                          // Message Info
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        otherUserName,
+                                                        style: TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: AppColors
+                                                              .deepPlum,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                    if (chat.lastMessageAt !=
+                                                        null)
+                                                      Text(
+                                                        _formatTime(
+                                                          chat.lastMessageAt!,
+                                                        ),
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color:
+                                                              Colors.grey[500],
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        chat.lastMessage ??
+                                                            'Start the conversation! 💬',
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          color:
+                                                              Colors.grey[600],
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    if (hasUnread)
+                                                      Row(
+                                                        children: [
+                                                          Icon(
+                                                            Icons.done_all,
+                                                            size: 16,
+                                                            color: AppColors
+                                                                .cupidPink,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                  ],
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                  )
-                                else
-                                  Expanded(
-                                    child: ListView.separated(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                      itemCount: filteredChats.length,
-                                      separatorBuilder: (context, index) =>
-                                          const SizedBox(height: 0),
-                                      itemBuilder: (context, index) {
-                                        final chat = filteredChats[index];
-                                        final otherUserName = chat
-                                            .getOtherUserName(currentUserId);
-                                        final otherUserPhoto = chat
-                                            .getOtherUserPhoto(currentUserId);
-                                        final unreadCount = chat.getUnreadCount(
-                                          currentUserId,
-                                        );
-                                        final hasUnread = unreadCount > 0;
-
-                                        return InkWell(
-                                          onTap: () =>
-                                              context.push('/chat/${chat.id}'),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 12,
-                                              horizontal: 8,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                // User Avatar
-                                                CircleAvatar(
-                                                  radius: 28,
-                                                  backgroundImage:
-                                                      otherUserPhoto != null
-                                                      ? NetworkImage(
-                                                          otherUserPhoto,
-                                                        )
-                                                      : null,
-                                                  backgroundColor: AppColors
-                                                      .cupidPink
-                                                      .withOpacity(0.2),
-                                                  child: otherUserPhoto == null
-                                                      ? Text(
-                                                          otherUserName
-                                                                  .isNotEmpty
-                                                              ? otherUserName[0]
-                                                                    .toUpperCase()
-                                                              : '?',
-                                                          style:
-                                                              const TextStyle(
-                                                                fontSize: 20,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                color: AppColors
-                                                                    .cupidPink,
-                                                              ),
-                                                        )
-                                                      : null,
-                                                ),
-                                                const SizedBox(width: 16),
-
-                                                // Message Info
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Row(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .spaceBetween,
-                                                        children: [
-                                                          Expanded(
-                                                            child: Text(
-                                                              otherUserName,
-                                                              style: TextStyle(
-                                                                fontSize: 16,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                color: AppColors
-                                                                    .deepPlum,
-                                                              ),
-                                                              maxLines: 1,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
-                                                          ),
-                                                          if (chat.lastMessageAt !=
-                                                              null)
-                                                            Text(
-                                                              _formatTime(
-                                                                chat.lastMessageAt!,
-                                                              ),
-                                                              style: TextStyle(
-                                                                fontSize: 12,
-                                                                color: Colors
-                                                                    .grey[500],
-                                                              ),
-                                                            ),
-                                                        ],
-                                                      ),
-                                                      const SizedBox(height: 4),
-                                                      Row(
-                                                        children: [
-                                                          Expanded(
-                                                            child: Text(
-                                                              chat.lastMessage ??
-                                                                  'Start the conversation! 💬',
-                                                              style: TextStyle(
-                                                                fontSize: 14,
-                                                                color: Colors
-                                                                    .grey[600],
-                                                              ),
-                                                              maxLines: 1,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                            width: 8,
-                                                          ),
-                                                          if (hasUnread)
-                                                            Row(
-                                                              children: [
-                                                                Icon(
-                                                                  Icons
-                                                                      .done_all,
-                                                                  size: 16,
-                                                                  color: AppColors
-                                                                      .cupidPink,
-                                                                ),
-                                                              ],
-                                                            ),
-                                                        ],
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                              ],
+                                  );
+                                },
+                              ),
                             ),
-                          );
-                        },
+                        ],
                       ),
+                    );
+                  },
+                ),
                 // Bottom white blur gradient
                 Positioned(
                   left: 0,
@@ -634,7 +640,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       ),
     );
   }
-
 
   String _formatTime(DateTime time) {
     final now = DateTime.now();

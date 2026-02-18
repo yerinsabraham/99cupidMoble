@@ -68,6 +68,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       try {
         await _authService.signOut();
         if (mounted) {
+          // Navigate to login screen
           context.go('/login');
         }
       } catch (e) {

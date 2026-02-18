@@ -40,8 +40,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   /// Check user profile and navigate accordingly
   Future<void> _navigateAfterAuth() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    // Wait for Firebase Auth state to propagate (with retry)
+    User? user;
+    for (int i = 0; i < 5; i++) {
+      user = FirebaseAuth.instance.currentUser;
+      if (user != null) break;
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    if (user == null) {
+      debugPrint('Error: User is null after sign-in');
+      return;
+    }
 
     try {
       final userDoc = await FirebaseFirestore.instance
@@ -66,10 +76,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PolicyWebViewScreen(
-          title: title,
-          url: url,
-        ),
+        builder: (context) => PolicyWebViewScreen(title: title, url: url),
       ),
     );
   }
@@ -88,13 +95,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
 
     final email = _emailController.text.trim();
-    
+
     final success = await ref
         .read(authNotifierProvider.notifier)
-        .signUpWithEmail(
-          email: email,
-          password: _passwordController.text,
-        );
+        .signUpWithEmail(email: email, password: _passwordController.text);
 
     if (success) {
       if (mounted) {
@@ -113,7 +117,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 children: [
                   Icon(
                     Icons.mark_email_read,
-                    color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.cupidPink,
+                    color: isDark
+                        ? AppColors.cupidPink.withOpacity(0.9)
+                        : AppColors.cupidPink,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -134,7 +140,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   Text(
                     'A verification email has been sent to:',
                     style: TextStyle(
-                      color: isDark ? Colors.white.withOpacity(0.7) : AppColors.grey600,
+                      color: isDark
+                          ? Colors.white.withOpacity(0.7)
+                          : AppColors.grey600,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -142,7 +150,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     email,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.deepPlum,
+                      color: isDark
+                          ? AppColors.cupidPink.withOpacity(0.9)
+                          : AppColors.deepPlum,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -150,14 +160,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     'Please check your inbox and verify your email address. '
                     'If you don\'t see the email, check your spam folder.',
                     style: TextStyle(
-                      color: isDark ? Colors.white.withOpacity(0.7) : AppColors.grey600,
+                      color: isDark
+                          ? Colors.white.withOpacity(0.7)
+                          : AppColors.grey600,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.cupidPink.withOpacity(isDark ? 0.15 : 0.1),
+                      color: AppColors.cupidPink.withOpacity(
+                        isDark ? 0.15 : 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -165,7 +179,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         Icon(
                           Icons.info_outline,
                           size: 16,
-                          color: isDark ? AppColors.cupidPink.withOpacity(0.9) : AppColors.cupidPink,
+                          color: isDark
+                              ? AppColors.cupidPink.withOpacity(0.9)
+                              : AppColors.cupidPink,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -173,7 +189,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             'Make sure the email address is correct',
                             style: TextStyle(
                               fontSize: 12,
-                              color: isDark ? Colors.white.withOpacity(0.8) : AppColors.grey700,
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.8)
+                                  : AppColors.grey700,
                             ),
                           ),
                         ),
@@ -198,9 +216,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     } else {
       if (mounted) {
         // Get user-friendly error message from auth state
-        final errorMessage = ref.read(authNotifierProvider).error ?? 
+        final errorMessage =
+            ref.read(authNotifierProvider).error ??
             'Sign up failed. Please try again.';
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -213,8 +232,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   Future<void> _handleGoogleSignUp() async {
-    final success = await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-    
+    final success = await ref
+        .read(authNotifierProvider.notifier)
+        .signInWithGoogle();
+
     if (success) {
       await _navigateAfterAuth();
     } else {
@@ -233,8 +254,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   Future<void> _handleAppleSignUp() async {
-    final success = await ref.read(authNotifierProvider.notifier).signInWithApple();
-    
+    final success = await ref
+        .read(authNotifierProvider.notifier)
+        .signInWithApple();
+
     if (success) {
       await _navigateAfterAuth();
     } else {
@@ -312,8 +335,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         }
                         // Check for common typos/issues
                         final trimmedValue = value.trim();
-                        if (trimmedValue.contains('..') || 
-                            trimmedValue.startsWith('.') || 
+                        if (trimmedValue.contains('..') ||
+                            trimmedValue.startsWith('.') ||
                             trimmedValue.endsWith('.')) {
                           return AppStrings.invalidEmail;
                         }
@@ -424,9 +447,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                     ),
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () => _openPolicyPage(
-                                            'Terms & Conditions',
-                                            'https://99cupid.com/terms',
-                                          ),
+                                        'Terms & Conditions',
+                                        'https://99cupid.com/terms',
+                                      ),
                                   ),
                                   const TextSpan(text: ' and '),
                                   TextSpan(
@@ -438,9 +461,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                     ),
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () => _openPolicyPage(
-                                            'Privacy Policy',
-                                            'https://99cupid.com/privacy-policy',
-                                          ),
+                                        'Privacy Policy',
+                                        'https://99cupid.com/privacy-policy',
+                                      ),
                                   ),
                                 ],
                               ),
@@ -454,7 +477,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     // Sign Up Button
                     AppButton(
                       text: AppStrings.signup,
-                      onPressed: (authState.isLoading || !_acceptedTerms) ? null : _handleSignUp,
+                      onPressed: (authState.isLoading || !_acceptedTerms)
+                          ? null
+                          : _handleSignUp,
                       isLoading: authState.isLoading,
                     ),
                     const SizedBox(height: 24),
@@ -508,7 +533,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       icon: Icon(
                         Icons.apple,
                         size: 24,
-                        color: authState.isLoading ? AppColors.grey400 : AppColors.grey800,
+                        color: authState.isLoading
+                            ? AppColors.grey400
+                            : AppColors.grey800,
                       ),
                       label: Text(AppStrings.continueWithApple),
                       style: OutlinedButton.styleFrom(

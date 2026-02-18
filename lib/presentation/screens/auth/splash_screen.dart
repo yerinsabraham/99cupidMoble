@@ -53,9 +53,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           // Check if profile is complete - either by explicit flag OR by having essential fields
           final profileComplete = data?['profileSetupComplete'] ?? false;
           final hasDisplayName =
-              data?['displayName'] != null && (data?['displayName'] as String).isNotEmpty;
+              data?['displayName'] != null &&
+              (data?['displayName'] as String).isNotEmpty;
           final hasAge = data?['age'] != null && (data?['age'] as int) > 0;
-          final hasGender = data?['gender'] != null && (data?['gender'] as String).isNotEmpty;
+          final hasGender =
+              data?['gender'] != null && (data?['gender'] as String).isNotEmpty;
           final hasPhotos =
               data?['photos'] != null && (data?['photos'] as List).isNotEmpty;
 

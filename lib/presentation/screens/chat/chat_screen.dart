@@ -39,8 +39,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isUploadingImage = false;
   bool _isOtherUserOnline = false;
 
-
-
   @override
   void initState() {
     super.initState();
@@ -65,18 +63,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Future<void> _checkOnlineStatus() async {
     if (_chat == null) return;
-    
+
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     final otherUserId = _chat!.getOtherUserId(currentUserId);
-    
+
     final isOnline = await _userAccountService.isUserOnline(otherUserId);
-    
+
     if (mounted && _isOtherUserOnline != isOnline) {
       setState(() => _isOtherUserOnline = isOnline);
     }
   }
-
-
 
   @override
   void dispose() {
@@ -100,7 +96,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
         // Mark messages as read
         _markMessagesAsRead();
-        
+
         // Update lastSeen when user opens chat
         _userAccountService.updateLastSeen();
       }
@@ -150,29 +146,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-                leading: const Icon(IconlyLight.profile, color: AppColors.cupidPink),
-                title: const Text('View Profile'),
-                onTap: () {
-                  Navigator.pop(context);
-                  final otherUserId = _chat?.getOtherUserId(
-                    FirebaseAuth.instance.currentUser?.uid ?? '',
-                  );
-                  if (otherUserId != null) {
-                    context.push('/profile/$otherUserId');
-                  }
-                },
+              leading: const Icon(
+                IconlyLight.profile,
+                color: AppColors.cupidPink,
               ),
-              ListTile(
-                leading: const Icon(Icons.block, color: Colors.orange),
-                title: const Text('Block User'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showBlockUserDialog(context);
-                },
-              ),
+              title: const Text('View Profile'),
+              onTap: () {
+                Navigator.pop(context);
+                final otherUserId = _chat?.getOtherUserId(
+                  FirebaseAuth.instance.currentUser?.uid ?? '',
+                );
+                if (otherUserId != null) {
+                  context.push('/profile/$otherUserId');
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.block, color: Colors.orange),
+              title: const Text('Block User'),
+              onTap: () {
+                Navigator.pop(context);
+                _showBlockUserDialog(context);
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Delete Chat', style: TextStyle(color: Colors.red)),
+              title: const Text(
+                'Delete Chat',
+                style: TextStyle(color: Colors.red),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _showDeleteChatDialog(context);
@@ -193,7 +195,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final confirm = await showAppConfirmDialog(
       context,
       title: 'Block User',
-      content: 'Are you sure you want to block this user? You will no longer receive messages from them.',
+      content:
+          'Are you sure you want to block this user? You will no longer receive messages from them.',
       confirmText: 'Block',
       isDestructive: true,
     );
@@ -210,7 +213,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final confirm = await showAppConfirmDialog(
       context,
       title: 'Delete Chat',
-      content: 'Are you sure you want to delete this conversation? This action cannot be undone.',
+      content:
+          'Are you sure you want to delete this conversation? This action cannot be undone.',
       confirmText: 'Delete',
       isDestructive: true,
     );
@@ -223,9 +227,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             .delete();
         if (mounted) {
           context.pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Chat deleted')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Chat deleted')));
         }
       } catch (e) {
         if (mounted) {
@@ -276,7 +280,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           });
 
       _messageController.clear();
-      
+
       // Update lastSeen when sending message
       _userAccountService.updateLastSeen();
 
@@ -447,7 +451,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library, color: AppColors.cupidPink),
+              leading: const Icon(
+                Icons.photo_library,
+                color: AppColors.cupidPink,
+              ),
               title: const Text('Choose from gallery'),
               onTap: () {
                 Navigator.pop(context);
@@ -606,9 +613,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
 
                   // Messages List
-                  Expanded(
-                    child: _buildRealMessagesList(),
-                  ),
+                  Expanded(child: _buildRealMessagesList()),
 
                   // Message Input
                   _buildMessageInput(),
@@ -631,7 +636,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return StreamBuilder<List<MessageModel>>(
       stream: _getMessagesStream(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        // Only show loading if we're waiting AND don't have data yet
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
           return const Center(child: LoadingIndicator());
         }
 
@@ -693,14 +700,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             backgroundColor: Colors.black,
                             child: Stack(
                               children: [
-                                Center(
-                                  child: Image.network(message.imageUrl!),
-                                ),
+                                Center(child: Image.network(message.imageUrl!)),
                                 Positioned(
                                   top: 40,
                                   right: 20,
                                   child: IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 30,
+                                    ),
                                     onPressed: () => Navigator.pop(context),
                                   ),
                                 ),
@@ -819,7 +828,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     )
                   : IconButton(
                       padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.add, color: Colors.white, size: 24),
+                      icon: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                       onPressed: _showImageOptions,
                     ),
             ),

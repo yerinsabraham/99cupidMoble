@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -8,6 +11,13 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Load keystore properties
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.cupid99.cupid_99"
     compileSdk = flutter.compileSdkVersion
@@ -16,10 +26,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+    kotlin {
+        jvmToolchain(17)
     }
 
     defaultConfig {
@@ -33,15 +44,37 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"].toString()
+                keyPassword = keystoreProperties["keyPassword"].toString()
+                storeFile = file(keystoreProperties["storeFile"].toString())
+                storePassword = keystoreProperties["storePassword"].toString()
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+            // Disable minification to avoid gradle crashes
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("com.google.android.play:app-update:2.1.0")
+    implementation("com.google.android.play:review:2.0.1")
 }

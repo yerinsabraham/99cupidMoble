@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconly/iconly.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
@@ -31,6 +32,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final userProfile = ref.watch(userProfileProvider);
+
+    // If no user profile (logged out), immediately navigate to login
+    // Don't show loading screen during logout transition
+    if (userProfile.value == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.go('/login');
+        }
+      });
+      // Return empty scaffold while navigating
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: SizedBox.shrink(),
+      );
+    }
 
     // Show loading screen while profile is loading
     if (userProfile.isLoading) {

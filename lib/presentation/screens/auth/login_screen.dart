@@ -36,8 +36,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   /// Check user profile and navigate accordingly
   Future<void> _navigateAfterAuth() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    // Wait for Firebase Auth state to propagate (with retry)
+    User? user;
+    for (int i = 0; i < 5; i++) {
+      user = FirebaseAuth.instance.currentUser;
+      if (user != null) break;
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    if (user == null) {
+      debugPrint('Error: User is null after sign-in');
+      return;
+    }
 
     try {
       final userDoc = await FirebaseFirestore.instance
@@ -67,15 +77,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-    
+
     if (success) {
       await _navigateAfterAuth();
     } else {
       if (mounted) {
         // Get user-friendly error message from auth state
-        final errorMessage = ref.read(authNotifierProvider).error ?? 
+        final errorMessage =
+            ref.read(authNotifierProvider).error ??
             'Login failed. Please try again.';
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -88,8 +99,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleGoogleLogin() async {
-    final success = await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-    
+    final success = await ref
+        .read(authNotifierProvider.notifier)
+        .signInWithGoogle();
+
     if (success) {
       await _navigateAfterAuth();
     } else {
@@ -108,8 +121,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleAppleLogin() async {
-    final success = await ref.read(authNotifierProvider.notifier).signInWithApple();
-    
+    final success = await ref
+        .read(authNotifierProvider.notifier)
+        .signInWithApple();
+
     if (success) {
       await _navigateAfterAuth();
     } else {
@@ -131,10 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PolicyWebViewScreen(
-          title: title,
-          url: url,
-        ),
+        builder: (context) => PolicyWebViewScreen(title: title, url: url),
       ),
     );
   }
@@ -282,13 +294,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     // Apple Sign In Button
                     OutlinedButton.icon(
-                      onPressed: authState.isLoading
-                          ? null
-                          : _handleAppleLogin,
+                      onPressed: authState.isLoading ? null : _handleAppleLogin,
                       icon: Icon(
                         Icons.apple,
                         size: 24,
-                        color: authState.isLoading ? AppColors.grey400 : AppColors.grey800,
+                        color: authState.isLoading
+                            ? AppColors.grey400
+                            : AppColors.grey800,
                       ),
                       label: Text(AppStrings.continueWithApple),
                       style: OutlinedButton.styleFrom(
@@ -344,9 +356,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () => _openPolicyPage(
-                                      'Privacy Policy',
-                                      'https://99cupid.com/privacy-policy',
-                                    ),
+                                  'Privacy Policy',
+                                  'https://99cupid.com/privacy-policy',
+                                ),
                             ),
                             const TextSpan(text: '  •  '),
                             TextSpan(
@@ -357,9 +369,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () => _openPolicyPage(
-                                      'Terms & Conditions',
-                                      'https://99cupid.com/terms',
-                                    ),
+                                  'Terms & Conditions',
+                                  'https://99cupid.com/terms',
+                                ),
                             ),
                           ],
                         ),
