@@ -149,6 +149,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     onSelected: (_) =>
                         setDialogState(() => selectedReason = reason),
                     selectedColor: AppColors.cupidPink,
+                    backgroundColor: Colors.white,
+                    side: BorderSide(
+                      color: selectedReason == reason
+                          ? AppColors.cupidPink
+                          : Colors.grey.withOpacity(0.3),
+                    ),
                     labelStyle: TextStyle(
                       color: selectedReason == reason ? Colors.white : null,
                       fontSize: 11,

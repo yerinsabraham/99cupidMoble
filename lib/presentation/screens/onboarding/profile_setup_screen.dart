@@ -208,14 +208,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               children: [
                 // Progress indicator
                 LinearProgressIndicator(
-                  value: 0.33,
+                  value: 0.25,
                   backgroundColor: AppColors.warmBlush,
                   valueColor: const AlwaysStoppedAnimation(AppColors.cupidPink),
                 ),
                 const SizedBox(height: 24),
                 
                 Text(
-                  'Step 1 of 3',
+                  'Step 1 of 4',
                   style: TextStyle(
                     fontSize: 14,
                     color: AppColors.deepPlum.withOpacity(0.6),

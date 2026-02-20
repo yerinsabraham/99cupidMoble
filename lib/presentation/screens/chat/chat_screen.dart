@@ -14,6 +14,8 @@ import '../../../core/constants/firebase_collections.dart';
 import '../../../data/services/user_account_service.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/app_dialog.dart';
+import '../../widgets/chat/conversation_starters_sheet.dart';
+import '../games/mini_games_screen.dart';
 
 /// ChatScreen - 1-on-1 messaging interface
 /// Redesigned to match modern chat UI
@@ -462,6 +464,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 _takePictureAndSend();
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.auto_awesome, color: AppColors.cupidPink),
+              title: const Text('Conversation Starters'),
+              subtitle: const Text('Cultural icebreakers & prompts'),
+              onTap: () {
+                Navigator.pop(context);
+                _showConversationStarters();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.sports_esports, color: AppColors.cupidPink),
+              title: const Text('Play a Game'),
+              subtitle: const Text('Truth or Dare, Would You Rather & more'),
+              onTap: () {
+                Navigator.pop(context);
+                _showMiniGames();
+              },
+            ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -469,6 +489,33 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showConversationStarters() {
+    showConversationStarters(
+      context,
+      onSend: (message) {
+        _messageController.text = message;
+        _sendMessage();
+      },
+    );
+  }
+
+  void _showMiniGames() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
+      builder: (_) => MiniGamesScreen(
+        onSendToChat: (message) {
+          _messageController.text = message;
+          _sendMessage();
+        },
       ),
     );
   }
@@ -658,8 +705,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Send a message to start the conversation!',
+                  'Break the ice with a conversation starter!',
                   style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildQuickAction(
+                      icon: Icons.auto_awesome,
+                      label: 'Icebreakers',
+                      onTap: _showConversationStarters,
+                    ),
+                    const SizedBox(width: 16),
+                    _buildQuickAction(
+                      icon: Icons.sports_esports,
+                      label: 'Play a Game',
+                      onTap: _showMiniGames,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -878,6 +942,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     );
                   }
                 },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.cupidPink.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cupidPink.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AppColors.cupidPink, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.cupidPink,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ],

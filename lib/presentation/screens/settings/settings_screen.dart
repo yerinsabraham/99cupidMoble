@@ -343,6 +343,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const SizedBox(height: 16),
 
+            // Discover Section — differentiating features
+            _buildSectionHeader('Discover'),
+            _buildSettingsTile(
+              icon: Icons.public,
+              title: 'Cultural Exchange',
+              subtitle: 'Explore world cultures through games & trivia',
+              onTap: () => context.push('/cultural-games'),
+            ),
+            _buildSettingsTile(
+              icon: Icons.sports_esports,
+              title: 'Fun Games',
+              subtitle: 'Truth or Dare, Would You Rather & more',
+              onTap: () => context.push('/mini-games'),
+            ),
+
+            const SizedBox(height: 16),
+
             // Notifications Section
             _buildSectionHeader('Notifications'),
             _buildSwitchTile(

@@ -8,6 +8,7 @@ import '../swipe/home_swipe_screen.dart';
 import '../matches/matches_screen.dart';
 import '../messages/messages_screen.dart';
 import '../profile/profile_screen.dart';
+import '../explore/explore_screen.dart';
 
 /// MainScreen - Bottom navigation container for main app screens
 /// Holds Home, Matches, Messages, and Profile tabs
@@ -25,6 +26,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     HomeSwipeScreen(),
     MatchesScreen(),
     MessagesScreen(),
+    ExploreScreen(),
     ProfileScreen(),
   ];
 
@@ -79,9 +81,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               index: 2,
             ),
             _buildNavItem(
+              icon: IconlyLight.discovery,
+              activeIcon: IconlyBold.discovery,
+              index: 3,
+            ),
+            _buildNavItem(
               icon: IconlyLight.profile,
               activeIcon: IconlyBold.profile,
-              index: 3,
+              index: 4,
             ),
           ],
         ),

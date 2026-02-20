@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/services/auth_service.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../widgets/common/app_button.dart';
 
@@ -17,7 +16,6 @@ class InterestsScreen extends ConsumerStatefulWidget {
 
 class _InterestsScreenState extends ConsumerState<InterestsScreen> {
   final Set<String> _selectedInterests = {};
-  bool _isLoading = false;
 
   static const List<String> _availableInterests = [
     '🎬 Movies',
@@ -70,176 +68,13 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    // Store interests in provider and navigate to disability step
+    ref.read(onboardingProvider.notifier).setInterests(_selectedInterests.toList());
+    debugPrint('Interests: Stored ${_selectedInterests.length} interests, navigating to disability step');
 
-    try {
-      final authService = ref.read(authServiceProvider);
-      final user = authService.currentUser;
-      
-      if (user == null) {
-        debugPrint('Interests: No user found!');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please log in again')),
-          );
-          context.go('/login');
-        }
-        return;
-      }
-      
-      debugPrint('Interests: User found: ${user.uid}');
-
-      // Store interests in provider
-      ref.read(onboardingProvider.notifier).setInterests(_selectedInterests.toList());
-
-      // Get all onboarding data collected across all steps
-      final onboardingData = ref.read(onboardingProvider);
-      final profileData = onboardingData.toMap(user.uid, user.email ?? '');
-
-      debugPrint('Interests: Saving complete profile data:');
-      debugPrint('  - Name: ${profileData['displayName']}');
-      debugPrint('  - Age: ${profileData['age']}');
-      debugPrint('  - Gender: ${profileData['gender']}');
-      debugPrint('  - Location: ${profileData['location']}');
-      debugPrint('  - Bio: ${profileData['bio']}');
-      debugPrint('  - Photos: ${profileData['photos']?.length ?? 0}');
-      debugPrint('  - Interests: ${profileData['interests']?.length ?? 0}');
-      debugPrint('  - Profile Complete: ${profileData['profileSetupComplete']}');
-
-      // Save everything to Firestore in one operation
-      await authService.updateUserProfile(user.uid, profileData);
-
-      debugPrint('Interests: Profile saved successfully to Firestore');
-
-      // Clear onboarding data
-      ref.read(onboardingProvider.notifier).clear();
-
-      if (mounted) {
-        // Show success dialog
-        await _showSuccessDialog();
-        
-        // Navigate to home screen
-        if (mounted) {
-          context.go('/home');
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving interests: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (mounted) {
+      context.go('/onboarding/disability');
     }
-  }
-
-  Future<void> _showSuccessDialog() async {
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        // Auto-close after 3 seconds
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted && Navigator.canPop(context)) {
-            Navigator.pop(context);
-          }
-        });
-
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            padding: const EdgeInsets.all(40.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // App logo
-                Image.asset(
-                  'assets/icons/applogo.png',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 32),
-                
-                // Success message
-                const Text(
-                  'Profile Complete!',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.deepPlum,
-                    letterSpacing: 0.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                
-                // Celebration emoji
-                const Text(
-                  '🎉',
-                  style: TextStyle(fontSize: 40),
-                ),
-                const SizedBox(height: 20),
-                
-                // Description
-                const Text(
-                  'Your profile has been saved successfully.',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: AppColors.deepPlum,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                
-                Text(
-                  'You can edit it anytime from Settings.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.deepPlum.withOpacity(0.6),
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 28),
-                
-                // Call to action
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.cupidPink.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    "Let's start discovering matches!",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.cupidPink,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -284,14 +119,14 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const LinearProgressIndicator(
-                    value: 1.0,
+                    value: 0.75,
                     backgroundColor: AppColors.warmBlush,
                     valueColor: AlwaysStoppedAnimation(AppColors.cupidPink),
                   ),
                   const SizedBox(height: 24),
                   
                   Text(
-                    'Step 3 of 3',
+                    'Step 3 of 4',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.deepPlum.withOpacity(0.6),
@@ -383,10 +218,10 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: AppButton(
-                      onPressed: _isLoading || _selectedInterests.length < 3
+                      onPressed: _selectedInterests.length < 3
                           ? null
                           : _complete,
-                      text: _isLoading ? 'Completing...' : 'Complete Profile',
+                      text: 'Next',
                     ),
                   ),
                 ],

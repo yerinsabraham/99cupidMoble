@@ -177,14 +177,14 @@ class _PhotoUploadScreenState extends ConsumerState<PhotoUploadScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   LinearProgressIndicator(
-                    value: 0.66,
+                    value: 0.50,
                     backgroundColor: AppColors.warmBlush,
                     valueColor: const AlwaysStoppedAnimation(AppColors.cupidPink),
                   ),
                   const SizedBox(height: 24),
                   
                   Text(
-                    'Step 2 of 3',
+                    'Step 2 of 4',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.deepPlum.withOpacity(0.6),

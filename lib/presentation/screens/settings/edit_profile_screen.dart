@@ -14,7 +14,10 @@ import '../../widgets/common/app_dialog.dart';
 /// EditProfileScreen - Edit user profile
 /// Ported from web app EditProfilePage.jsx
 class EditProfileScreen extends ConsumerStatefulWidget {
-  const EditProfileScreen({super.key});
+  /// Optional section to auto-scroll to after load (e.g. 'inclusive_dating')
+  final String? scrollToSection;
+
+  const EditProfileScreen({super.key, this.scrollToSection});
 
   @override
   ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -24,6 +27,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _inclusiveDatingKey = GlobalKey();
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -42,6 +47,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   int _minAge = 18;
   int _maxAge = 50;
   int _maxDistance = 50;
+
+  // Disability fields
+  bool _hasDisability = false;
+  List<String> _disabilityTypes = [];
+  String _disabilityDescription = '';
+  String _disabilityVisibility = 'private';
+  String _disabilityPreference = 'no_preference';
+  bool _showBadgeOnProfile = true;
+  late TextEditingController _disabilityDescController;
 
   final List<String> _availableInterests = [
     '🎬 Movies',
@@ -90,16 +104,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _locationController = TextEditingController();
     _jobController = TextEditingController();
     _educationController = TextEditingController();
+    _disabilityDescController = TextEditingController();
     _loadProfile();
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _nameController.dispose();
     _bioController.dispose();
     _locationController.dispose();
     _jobController.dispose();
     _educationController.dispose();
+    _disabilityDescController.dispose();
     super.dispose();
   }
 
@@ -130,8 +147,32 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           _minAge = data['preferences']?['ageRange']?['min'] ?? 18;
           _maxAge = data['preferences']?['ageRange']?['max'] ?? 50;
           _maxDistance = data['preferences']?['maxDistance'] ?? 50;
+
+          // Load disability data
+          _hasDisability = data['hasDisability'] ?? false;
+          _disabilityTypes = List<String>.from(data['disabilityTypes'] ?? []);
+          _disabilityDescription = data['disabilityDescription'] ?? '';
+          _disabilityDescController.text = _disabilityDescription;
+          _disabilityVisibility = data['disabilityVisibility'] ?? 'private';
+          _disabilityPreference = data['disabilityPreference'] ?? 'no_preference';
+          _showBadgeOnProfile = data['showBadgeOnProfile'] ?? true;
+
           _isLoading = false;
         });
+
+        // Auto-scroll to section if requested
+        if (widget.scrollToSection == 'inclusive_dating') {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final ctx = _inclusiveDatingKey.currentContext;
+            if (ctx != null) {
+              Scrollable.ensureVisible(
+                ctx,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error loading profile: $e');
@@ -380,6 +421,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           'ageRange': {'min': _minAge, 'max': _maxAge},
           'maxDistance': _maxDistance,
         },
+        // Disability fields
+        'hasDisability': _hasDisability,
+        'disabilityTypes': _disabilityTypes,
+        'disabilityDescription': _disabilityDescController.text.trim(),
+        'disabilityVisibility': _disabilityVisibility,
+        'disabilityPreference': _disabilityPreference,
+        'showBadgeOnProfile': _showBadgeOnProfile,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -447,6 +495,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           FocusScope.of(context).unfocus();
         },
         child: SingleChildScrollView(
+          controller: _scrollController,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -601,6 +650,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               subtitle: 'Select up to 10 interests',
             ),
             _buildInterestsGrid(),
+
+            const SizedBox(height: 24),
+
+            // Disability & Inclusion Section
+            Container(
+              key: _inclusiveDatingKey,
+              child: _buildSectionHeader(
+                'Inclusive Dating',
+                subtitle: 'Optional - Help us create a more inclusive community',
+              ),
+            ),
+            _buildDisabilitySection(),
 
             const SizedBox(height: 32),
           ],
@@ -773,9 +834,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       child: TextField(
         controller: controller,
         maxLines: maxLines,
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: const TextStyle(color: AppColors.grey600),
           hintText: hint,
+          hintStyle: TextStyle(color: Colors.grey[400]),
           prefixIcon: Icon(icon, color: AppColors.cupidPink),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -805,6 +873,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       onSelected: (_) => onSelected(value),
       backgroundColor: Colors.white,
       selectedColor: AppColors.cupidPink,
+      side: BorderSide(
+        color: isSelected
+            ? AppColors.cupidPink
+            : AppColors.deepPlum.withOpacity(0.2),
+      ),
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : AppColors.deepPlum,
         fontWeight: FontWeight.w500,
@@ -879,6 +952,384 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  // ──────────────────────────────────────────────
+  // DISABILITY & INCLUSION SECTION
+  // ──────────────────────────────────────────────
+
+  static const List<Map<String, String>> _disabilityOptions = [
+    {'value': 'physical', 'label': '🦽 Physical Mobility'},
+    {'value': 'visual', 'label': '👓 Visual'},
+    {'value': 'hearing', 'label': '👂 Hearing'},
+    {'value': 'chronic_illness', 'label': '💊 Chronic Illness'},
+    {'value': 'mental_health', 'label': '🧠 Mental Health'},
+    {'value': 'neurodivergent', 'label': '🧩 Neurodivergent'},
+    {'value': 'other', 'label': '✨ Other'},
+    {'value': 'prefer_not_to_specify', 'label': '🤐 Prefer not to say'},
+  ];
+
+  static const List<Map<String, String>> _visibilityOptions = [
+    {'value': 'public', 'label': 'Everyone', 'icon': 'eye', 'desc': 'Visible on your profile'},
+    {'value': 'matches', 'label': 'Matches Only', 'icon': 'people', 'desc': 'Only after you match'},
+    {'value': 'private', 'label': 'Private', 'icon': 'lock', 'desc': 'Hidden from everyone'},
+  ];
+
+  static const List<Map<String, String>> _preferenceOptions = [
+    {'value': 'no_preference', 'label': 'No Preference', 'desc': 'Open to anyone'},
+    {'value': 'open', 'label': 'Disability Confident', 'desc': 'Open to dating people with disabilities'},
+    {'value': 'prefer', 'label': 'Prefer', 'desc': 'Prefer partners with disabilities'},
+    {'value': 'only', 'label': 'Only', 'desc': 'Only interested in partners with disabilities'},
+  ];
+
+  Widget _buildDisabilitySection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Info banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3E8FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFD8B4FE)),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, color: Color(0xFF7C3AED), size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'This section is completely optional. You control who sees it and can change it anytime.',
+                    style: TextStyle(
+                      color: Color(0xFF6B21A8),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Do you have a disability?
+          const Text(
+            'Do you identify as a person with a disability?',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _hasDisability = true),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: _hasDisability
+                          ? const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)])
+                          : null,
+                      color: _hasDisability ? null : const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Yes',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: _hasDisability ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    _hasDisability = false;
+                    _disabilityTypes = [];
+                    _disabilityDescController.clear();
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: !_hasDisability
+                          ? const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)])
+                          : null,
+                      color: !_hasDisability ? null : const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'No',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: !_hasDisability ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // If yes, show disability types
+          if (_hasDisability) ...[
+            const SizedBox(height: 20),
+            const Text(
+              'Select all that apply:',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _disabilityOptions.map((option) {
+                final isSelected = _disabilityTypes.contains(option['value']);
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (isSelected) {
+                        _disabilityTypes.remove(option['value']);
+                      } else {
+                        _disabilityTypes.add(option['value']!);
+                      }
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)])
+                          : null,
+                      color: isSelected ? null : const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      option['label']!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: isSelected ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+
+            // Description
+            const SizedBox(height: 20),
+            const Text(
+              'Share more about your needs (optional):',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _disabilityDescController,
+              maxLines: 3,
+              maxLength: 500,
+              style: const TextStyle(color: Colors.black, fontSize: 15),
+              decoration: InputDecoration(
+                hintText: 'Anything potential partners should know...',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                filled: true,
+                fillColor: const Color(0xFFF9FAFB),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
+                ),
+              ),
+            ),
+
+            // Visibility
+            const SizedBox(height: 16),
+            const Text(
+              'Who can see this?',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 8),
+            ..._visibilityOptions.map((option) {
+              final isSelected = _disabilityVisibility == option['value'];
+              IconData iconData;
+              switch (option['icon']) {
+                case 'eye':
+                  iconData = Icons.visibility;
+                  break;
+                case 'people':
+                  iconData = Icons.people;
+                  break;
+                default:
+                  iconData = Icons.lock;
+              }
+              return GestureDetector(
+                onTap: () => setState(() => _disabilityVisibility = option['value']!),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFF8B5CF6) : const Color(0xFFF9FAFB),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFF8B5CF6) : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(iconData, size: 20, color: isSelected ? Colors.white : Colors.grey[600]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              option['label']!,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: isSelected ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              option['desc']!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isSelected ? Colors.white70 : Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isSelected)
+                        const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+
+          // Badge toggle
+          if (_hasDisability) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.badge_outlined, color: Color(0xFF8B5CF6), size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Show badge on profile cards',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          'Display your badge when others swipe',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _showBadgeOnProfile,
+                    onChanged: (v) => setState(() => _showBadgeOnProfile = v),
+                    activeColor: const Color(0xFF8B5CF6),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Matching preference (for everyone)
+          const SizedBox(height: 20),
+          const Text(
+            'Dating preference:',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
+          ),
+          const SizedBox(height: 8),
+          ..._preferenceOptions.map((option) {
+            final isSelected = _disabilityPreference == option['value'];
+            return GestureDetector(
+              onTap: () => setState(() => _disabilityPreference = option['value']!),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)])
+                      : null,
+                  color: isSelected ? null : const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: isSelected ? null : Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            option['label']!,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: isSelected ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            option['desc']!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isSelected ? Colors.white70 : Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isSelected)
+                      const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }

@@ -12,6 +12,7 @@ class FirebaseCollections {
   static const String verifications = 'verifications';
   static const String analytics = 'analytics';
   static const String blockedUsers = 'blockedUsers';
+  static const String gameSessions = 'game_sessions';
 }
 
 /// Firebase Storage bucket paths
