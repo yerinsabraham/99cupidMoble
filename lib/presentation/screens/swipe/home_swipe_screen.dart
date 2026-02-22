@@ -11,6 +11,7 @@ import '../../../data/services/swipe_service.dart';
 import '../../../data/services/user_account_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../widgets/swipe/swipe_card_new.dart';
+import '../../widgets/swipe/filter_dialog.dart';
 
 class HomeSwipeScreen extends ConsumerStatefulWidget {
   const HomeSwipeScreen({super.key});
@@ -27,6 +28,15 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
   List<UserModel> _profiles = [];
   bool _isLoading = true;
   int _currentIndex = 0;
+  
+  // Filters
+  Map<String, dynamic> _filters = {
+    'location': '',
+    'maxDistance': 'any',
+    'ageMin': 18,
+    'ageMax': 50,
+    'gender': 'everyone',
+  };
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -55,7 +65,10 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null) {
-        final profiles = await _matchingService.getMatches(currentUser.uid);
+        final profiles = await _matchingService.getMatches(
+          currentUser.uid,
+          filters: _filters,
+        );
         setState(() {
           _profiles = profiles;
           _isLoading = false;
@@ -65,6 +78,21 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
       debugPrint('Error loading profiles: $e');
       setState(() => _isLoading = false);
     }
+  }
+  
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => FilterDialog(
+        currentFilters: _filters,
+        onApplyFilters: (newFilters) {
+          setState(() {
+            _filters = newFilters;
+          });
+          _loadProfiles();
+        },
+      ),
+    );
   }
 
   Future<void> _handleSwipe(String targetUserId, bool isLike) async {
@@ -486,7 +514,7 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                           ],
                         ),
                         child: IconButton(
-                          onPressed: () => context.push('/settings'),
+                          onPressed: _showFilterDialog,
                           icon: const Icon(
                             IconlyLight.filter,
                             color: AppColors.deepPlum,

@@ -295,16 +295,20 @@ class _CulturalGamesScreenState extends ConsumerState<CulturalGamesScreen>
     final total = _filteredQuestions.length;
     final pct = (_score / total * 100).round();
     String message;
-    String emoji;
+    IconData icon;
+    Color iconColor;
     if (pct >= 80) {
       message = 'Cultural Ambassador! You really know the world.';
-      emoji = '🌍';
+      icon = Icons.public;
+      iconColor = const Color(0xFF00B894);
     } else if (pct >= 50) {
       message = 'Great effort! Keep exploring world cultures.';
-      emoji = '📚';
+      icon = Icons.school;
+      iconColor = AppColors.cupidPink;
     } else {
       message = 'There\'s so much to discover! Play again?';
-      emoji = '🌱';
+      icon = Icons.emoji_nature;
+      iconColor = const Color(0xFF6C5CE7);
     }
 
     showDialog(
@@ -316,7 +320,7 @@ class _CulturalGamesScreenState extends ConsumerState<CulturalGamesScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 48)),
+              Icon(icon, color: iconColor, size: 56),
               const SizedBox(height: 16),
               Text(
                 '$_score / $total',
@@ -436,7 +440,11 @@ class _CulturalGamesScreenState extends ConsumerState<CulturalGamesScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('🌍', style: TextStyle(fontSize: 48)),
+            const Icon(
+              Icons.public,
+              color: AppColors.cupidPink,
+              size: 56,
+            ),
             const SizedBox(height: 16),
             const Text('No questions for this region yet!',
                 style: TextStyle(fontSize: 16, color: AppColors.deepPlum)),

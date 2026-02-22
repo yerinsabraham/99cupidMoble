@@ -174,28 +174,28 @@ class _MiniGamesScreenState extends State<MiniGamesScreen> {
             const SizedBox(height: 12),
 
             _buildGameCard(
-              emoji: '🤔',
+              icon: Icons.psychology,
               title: 'Would You Rather',
               subtitle: 'Pick between two tough choices',
               color: const Color(0xFFFF6B6B),
               onTap: () => _playWouldYouRather(context),
             ),
             _buildGameCard(
-              emoji: '🎯',
+              icon: Icons.sports_esports,
               title: 'Truth or Dare',
               subtitle: 'Classic ice-breaker game',
               color: const Color(0xFF4ECDC4),
               onTap: () => _playTruthOrDare(context),
             ),
             _buildGameCard(
-              emoji: '⚡',
+              icon: Icons.bolt,
               title: 'This or That',
               subtitle: 'Quick-fire preferences',
               color: const Color(0xFFFFBE0B),
               onTap: () => _playThisOrThat(context),
             ),
             _buildGameCard(
-              emoji: '💕',
+              icon: Icons.favorite_outline,
               title: '20 Questions',
               subtitle: 'Get to know each other deeply',
               color: AppColors.cupidPink,
@@ -208,7 +208,7 @@ class _MiniGamesScreenState extends State<MiniGamesScreen> {
   }
 
   Widget _buildGameCard({
-    required String emoji,
+    required IconData icon,
     required String title,
     required String subtitle,
     required Color color,
@@ -240,7 +240,11 @@ class _MiniGamesScreenState extends State<MiniGamesScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
-                child: Text(emoji, style: const TextStyle(fontSize: 28)),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 30,
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -278,7 +282,7 @@ class _MiniGamesScreenState extends State<MiniGamesScreen> {
     _showGameSheet(
       ctx,
       title: 'Would You Rather',
-      emoji: '🤔',
+      icon: Icons.psychology,
       color: const Color(0xFFFF6B6B),
       getQuestion: () => _wouldYouRather[_random.nextInt(_wouldYouRather.length)],
     );
@@ -397,7 +401,7 @@ class _MiniGamesScreenState extends State<MiniGamesScreen> {
     _showGameSheet(
       ctx,
       title: '20 Questions',
-      emoji: '💕',
+      icon: Icons.favorite_outline,
       color: AppColors.cupidPink,
       getQuestion: () => _twentyQuestions[_random.nextInt(_twentyQuestions.length)],
     );
@@ -406,7 +410,7 @@ class _MiniGamesScreenState extends State<MiniGamesScreen> {
   void _showGameSheet(
     BuildContext ctx, {
     required String title,
-    required String emoji,
+    required IconData icon,
     required Color color,
     required String Function() getQuestion,
   }) {
@@ -425,7 +429,7 @@ class _MiniGamesScreenState extends State<MiniGamesScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 36)),
+              Icon(icon, color: color, size: 42),
               const SizedBox(height: 12),
               Text(title,
                   style: const TextStyle(
@@ -629,9 +633,10 @@ class _MiniGamesScreenState extends State<MiniGamesScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
-                          child: Text(
-                            _emojiForGameType(game.gameType),
-                            style: const TextStyle(fontSize: 20),
+                          child: Icon(
+                            _iconForGameType(game.gameType),
+                            color: AppColors.cupidPink,
+                            size: 24,
                           ),
                         ),
                       ),
@@ -744,18 +749,18 @@ class _MiniGamesScreenState extends State<MiniGamesScreen> {
     }
   }
 
-  String _emojiForGameType(String gameType) {
+  IconData _iconForGameType(String gameType) {
     switch (gameType) {
       case 'would_you_rather':
-        return '🤔';
+        return Icons.psychology;
       case 'truth_or_dare':
-        return '🎯';
+        return Icons.sports_esports;
       case 'this_or_that':
-        return '⚡';
+        return Icons.bolt;
       case '20_questions':
-        return '💕';
+        return Icons.favorite_outline;
       default:
-        return '🎮';
+        return Icons.sports_esports;
     }
   }
 }
@@ -842,10 +847,10 @@ class _InvitePlayerSheetState extends State<_InvitePlayerSheet> {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
-                  _buildGameTypeChip('would_you_rather', '🤔 Would You Rather'),
-                  _buildGameTypeChip('truth_or_dare', '🎯 Truth or Dare'),
-                  _buildGameTypeChip('this_or_that', '⚡ This or That'),
-                  _buildGameTypeChip('20_questions', '💕 20 Questions'),
+                  _buildGameTypeChip('would_you_rather', Icons.psychology, 'Would You Rather'),
+                  _buildGameTypeChip('truth_or_dare', Icons.sports_esports, 'Truth or Dare'),
+                  _buildGameTypeChip('this_or_that', Icons.bolt, 'This or That'),
+                  _buildGameTypeChip('20_questions', Icons.favorite_outline, '20 Questions'),
                 ],
               ),
             ),
@@ -862,12 +867,23 @@ class _InvitePlayerSheetState extends State<_InvitePlayerSheet> {
     );
   }
 
-  Widget _buildGameTypeChip(String value, String label) {
+  Widget _buildGameTypeChip(String value, IconData icon, String label) {
     final isSelected = _selectedGameType == value;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
-        label: Text(label),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : AppColors.deepPlum,
+            ),
+            const SizedBox(width: 6),
+            Text(label),
+          ],
+        ),
         selected: isSelected,
         selectedColor: AppColors.cupidPink,
         backgroundColor: Colors.white,
@@ -1085,7 +1101,11 @@ class _TruthOrDareSheetState extends State<_TruthOrDareSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('🎯', style: TextStyle(fontSize: 36)),
+          const Icon(
+            Icons.sports_esports,
+            color: Color(0xFF4ECDC4),
+            size: 42,
+          ),
           const SizedBox(height: 12),
           const Text('Truth or Dare',
               style: TextStyle(

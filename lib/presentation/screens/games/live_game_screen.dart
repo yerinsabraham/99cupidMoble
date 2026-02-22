@@ -161,9 +161,10 @@ class _LiveGameScreenState extends State<LiveGameScreen> {
             ),
             child: Column(
               children: [
-                Text(
-                  _emojiForGameType(session.gameType),
-                  style: const TextStyle(fontSize: 40),
+                Icon(
+                  _iconForGameType(session.gameType),
+                  color: AppColors.cupidPink,
+                  size: 48,
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -699,18 +700,18 @@ class _LiveGameScreenState extends State<LiveGameScreen> {
     );
   }
 
-  String _emojiForGameType(String gameType) {
+  IconData _iconForGameType(String gameType) {
     switch (gameType) {
       case 'would_you_rather':
-        return '🤔';
+        return Icons.psychology;
       case 'truth_or_dare':
-        return '🎯';
+        return Icons.sports_esports;
       case 'this_or_that':
-        return '⚡';
+        return Icons.bolt;
       case '20_questions':
-        return '💕';
+        return Icons.favorite_outline;
       default:
-        return '🎮';
+        return Icons.sports_esports;
     }
   }
 }

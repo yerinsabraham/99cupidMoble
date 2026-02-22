@@ -562,6 +562,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
                 child: Row(
                   children: [
+                    // Back Button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: AppColors.deepPlum,
+                          size: 20,
+                        ),
+                        onPressed: () => context.pop(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     // User Avatar and Info
                     CircleAvatar(
                       radius: 24,

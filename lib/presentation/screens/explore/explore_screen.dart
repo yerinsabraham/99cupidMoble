@@ -63,7 +63,7 @@ class ExploreScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _LeadFeatureCard(
-                  emoji: '🌍',
+                  icon: Icons.public,
                   badge: 'FEATURED',
                   badgeColor: AppColors.cupidPink,
                   title: 'Cultural Exchange',
@@ -110,7 +110,7 @@ class ExploreScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _FeatureCard(
-                  emoji: '✨',
+                  icon: Icons.chat_bubble_outline,
                   title: 'Conversation Starters',
                   subtitle:
                       'Cultural, Deep, Fun, and Travel prompts — break the ice perfectly',
@@ -126,7 +126,7 @@ class ExploreScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: _FeatureCard(
-                  emoji: '🎯',
+                  icon: Icons.sports_esports,
                   title: 'Fun Games',
                   subtitle:
                       'Truth or Dare, Would You Rather, This or That, 20 Questions',
@@ -187,8 +187,11 @@ class ExploreScreen extends StatelessWidget {
                               color: AppColors.cupidPink.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Text('♿',
-                                style: TextStyle(fontSize: 22)),
+                            child: const Icon(
+                              Icons.accessibility_new,
+                              color: AppColors.cupidPink,
+                              size: 24,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           const Expanded(
@@ -341,7 +344,7 @@ class ExploreScreen extends StatelessWidget {
 // ──────────────────────────────────────────────────────────
 
 class _LeadFeatureCard extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String badge;
   final Color badgeColor;
   final String title;
@@ -351,7 +354,7 @@ class _LeadFeatureCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _LeadFeatureCard({
-    required this.emoji,
+    required this.icon,
     required this.badge,
     required this.badgeColor,
     required this.title,
@@ -401,7 +404,11 @@ class _LeadFeatureCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Text(emoji, style: const TextStyle(fontSize: 36)),
+                Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 40,
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -453,14 +460,14 @@ class _LeadFeatureCard extends StatelessWidget {
 }
 
 class _FeatureCard extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
 
   const _FeatureCard({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
@@ -494,7 +501,11 @@ class _FeatureCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(
-                child: Text(emoji, style: const TextStyle(fontSize: 26)),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 28,
+                ),
               ),
             ),
             const SizedBox(width: 14),
