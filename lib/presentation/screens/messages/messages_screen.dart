@@ -208,9 +208,15 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           context.push('/chat/$existingChatId');
         }
       } else {
-        // Create new chat
+        // Create new chat with fields consistent with web SwipeService.createMatch
         final chatData = {
           'participants': [currentUser.uid, otherUserId],
+          'user1Id': currentUser.uid,
+          'user2Id': otherUserId,
+          'user1Name': currentUser.displayName ?? 'User',
+          'user2Name': otherUserName,
+          'user1Photo': currentUser.photoURL,
+          'user2Photo': otherUserPhoto,
           'participantNames': {
             currentUser.uid: currentUser.displayName ?? 'User',
             otherUserId: otherUserName,
@@ -256,13 +262,17 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         .collection(FirebaseCollections.chats)
         .where('participants', arrayContains: currentUser.uid)
         .snapshots()
-        .handleError((error) {
-          debugPrint('Error loading chats: $error');
-          return null;
-        })
         .map((snapshot) {
           final chats = snapshot.docs
-              .map((doc) => ChatModel.fromFirestore(doc))
+              .map((doc) {
+                try {
+                  return ChatModel.fromFirestore(doc);
+                } catch (e) {
+                  debugPrint('Error parsing chat doc ${doc.id}: $e');
+                  return null;
+                }
+              })
+              .whereType<ChatModel>()
               .toList();
 
           // Sort by last message time
@@ -275,7 +285,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           return chats;
         })
         .handleError((error) {
-          debugPrint('Error mapping chats: $error');
+          debugPrint('Error loading chats stream: $error');
           return <ChatModel>[];
         });
   }

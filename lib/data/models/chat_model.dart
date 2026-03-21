@@ -35,18 +35,50 @@ class ChatModel {
   /// Create from Firestore document
   factory ChatModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final participants = List<String>.from(data['participants'] ?? []);
+
+    // Support both data models:
+    // - Web creates user1Id/user2Id/user1Name/etc.
+    // - Older Flutter chats may only have participantNames/participantPhotos
+    String u1Id = data['user1Id'] ?? '';
+    String u2Id = data['user2Id'] ?? '';
+    String u1Name = data['user1Name'] ?? 'User';
+    String u2Name = data['user2Name'] ?? 'User';
+    String? u1Photo = data['user1Photo'];
+    String? u2Photo = data['user2Photo'];
+
+    // Fallback: derive from participants + participantNames/participantPhotos
+    if (u1Id.isEmpty && participants.length >= 2) {
+      u1Id = participants[0];
+      u2Id = participants[1];
+      final names = data['participantNames'] as Map<String, dynamic>?;
+      final photos = data['participantPhotos'] as Map<String, dynamic>?;
+      if (names != null) {
+        u1Name = (names[u1Id] as String?) ?? 'User';
+        u2Name = (names[u2Id] as String?) ?? 'User';
+      }
+      if (photos != null) {
+        u1Photo = photos[u1Id] as String?;
+        u2Photo = photos[u2Id] as String?;
+      }
+    }
+
     return ChatModel(
       id: doc.id,
-      participants: List<String>.from(data['participants'] ?? []),
-      user1Id: data['user1Id'] ?? '',
-      user2Id: data['user2Id'] ?? '',
-      user1Name: data['user1Name'] ?? 'User',
-      user2Name: data['user2Name'] ?? 'User',
-      user1Photo: data['user1Photo'],
-      user2Photo: data['user2Photo'],
+      participants: participants,
+      user1Id: u1Id,
+      user2Id: u2Id,
+      user1Name: u1Name,
+      user2Name: u2Name,
+      user1Photo: u1Photo,
+      user2Photo: u2Photo,
       lastMessage: data['lastMessage'],
       lastMessageAt: (data['lastMessageAt'] as Timestamp?)?.toDate(),
-      unreadCount: Map<String, int>.from(data['unreadCount'] ?? {}),
+      unreadCount: Map<String, int>.from(
+        (data['unreadCount'] as Map<String, dynamic>? ?? {}).map(
+          (k, v) => MapEntry(k, (v is int) ? v : (v as num?)?.toInt() ?? 0),
+        ),
+      ),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
