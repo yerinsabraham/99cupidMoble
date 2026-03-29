@@ -37,7 +37,7 @@ class ExploreScreen extends StatelessWidget {
                         ),
                         const Spacer(),
                         Image.asset(
-                          'assets/icons/applogo.png',
+                          'assets/icons/icon_logo4.png',
                           width: 36,
                           height: 36,
                           errorBuilder: (_, __, ___) => const SizedBox.shrink(),

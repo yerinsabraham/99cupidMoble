@@ -213,12 +213,20 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   Future<void> _handleGoogleSignUp() async {
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please accept the Terms & Conditions to continue'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     final success = await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     
     if (success) {
       await _navigateAfterAuth();
     } else {
-      // Only show error if there's an actual error (not user cancellation)
       final errorMessage = ref.read(authNotifierProvider).error;
       if (mounted && errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -233,12 +241,20 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   Future<void> _handleAppleSignUp() async {
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please accept the Terms & Conditions to continue'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     final success = await ref.read(authNotifierProvider.notifier).signInWithApple();
     
     if (success) {
       await _navigateAfterAuth();
     } else {
-      // Only show error if there's an actual error (not user cancellation)
       final errorMessage = ref.read(authNotifierProvider).error;
       if (mounted && errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -480,7 +496,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
                     // Google Sign Up Button
                     OutlinedButton.icon(
-                      onPressed: authState.isLoading
+                      onPressed: (authState.isLoading || !_acceptedTerms)
                           ? null
                           : _handleGoogleSignUp,
                       icon: Image.asset(
@@ -502,13 +518,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
                     // Apple Sign Up Button
                     OutlinedButton.icon(
-                      onPressed: authState.isLoading
+                      onPressed: (authState.isLoading || !_acceptedTerms)
                           ? null
                           : _handleAppleSignUp,
                       icon: Icon(
                         Icons.apple,
                         size: 24,
-                        color: authState.isLoading ? AppColors.grey400 : AppColors.grey800,
+                        color: (authState.isLoading || !_acceptedTerms) ? AppColors.grey400 : AppColors.grey800,
                       ),
                       label: Text(AppStrings.continueWithApple),
                       style: OutlinedButton.styleFrom(

@@ -26,6 +26,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _acceptedTerms = false;
 
   @override
   void dispose() {
@@ -88,12 +89,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleGoogleLogin() async {
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please accept the Terms & Conditions to continue'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     final success = await ref.read(authNotifierProvider.notifier).signInWithGoogle();
     
     if (success) {
       await _navigateAfterAuth();
     } else {
-      // Only show error if there's an actual error (not user cancellation)
       final errorMessage = ref.read(authNotifierProvider).error;
       if (mounted && errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -108,12 +117,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleAppleLogin() async {
+    if (!_acceptedTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please accept the Terms & Conditions to continue'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     final success = await ref.read(authNotifierProvider.notifier).signInWithApple();
     
     if (success) {
       await _navigateAfterAuth();
     } else {
-      // Only show error if there's an actual error (not user cancellation)
       final errorMessage = ref.read(authNotifierProvider).error;
       if (mounted && errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -157,7 +174,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Logo
-                    Image.asset(AppAssets.logo, width: 50, fit: BoxFit.contain),
+                    Image.asset(AppAssets.logo, width: 160, height: 60, fit: BoxFit.contain),
                     const SizedBox(height: 10),
 
                     // Tagline
@@ -256,48 +273,145 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Expanded(child: Divider(color: AppColors.grey300)),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+
+                    // Terms checkbox — required for Google/Apple sign-in
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: Checkbox(
+                            value: _acceptedTerms,
+                            onChanged: (value) {
+                              setState(() {
+                                _acceptedTerms = value ?? false;
+                              });
+                            },
+                            activeColor: AppColors.cupidPink,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.grey700,
+                                  height: 1.4,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'I agree to the '),
+                                  TextSpan(
+                                    text: 'Terms & Conditions',
+                                    style: TextStyle(
+                                      color: AppColors.cupidPink,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _openPolicyPage(
+                                            'Terms & Conditions',
+                                            'https://99cupid.com/terms',
+                                          ),
+                                  ),
+                                  const TextSpan(text: ' and '),
+                                  TextSpan(
+                                    text: 'Privacy Policy',
+                                    style: TextStyle(
+                                      color: AppColors.cupidPink,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () => _openPolicyPage(
+                                            'Privacy Policy',
+                                            'https://99cupid.com/privacy-policy',
+                                          ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
 
                     // Google Sign In Button
                     OutlinedButton.icon(
-                      onPressed: authState.isLoading
+                      onPressed: (authState.isLoading || !_acceptedTerms)
                           ? null
                           : _handleGoogleLogin,
                       icon: Image.asset(
                         AppAssets.googleIcon,
                         height: 24,
                         width: 24,
+                        color: !_acceptedTerms ? AppColors.grey400 : null,
+                        colorBlendMode: BlendMode.modulate,
                       ),
-                      label: Text(AppStrings.continueWithGoogle),
+                      label: Text(
+                        AppStrings.continueWithGoogle,
+                        style: TextStyle(
+                          color: (authState.isLoading || !_acceptedTerms)
+                              ? AppColors.grey400
+                              : AppColors.grey800,
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.grey800,
+                        foregroundColor: (authState.isLoading || !_acceptedTerms)
+                            ? AppColors.grey400
+                            : AppColors.grey800,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        side: BorderSide(color: AppColors.grey300),
+                        side: BorderSide(
+                          color: (authState.isLoading || !_acceptedTerms)
+                              ? AppColors.grey200
+                              : AppColors.grey300,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
 
                     // Apple Sign In Button
                     OutlinedButton.icon(
-                      onPressed: authState.isLoading
+                      onPressed: (authState.isLoading || !_acceptedTerms)
                           ? null
                           : _handleAppleLogin,
                       icon: Icon(
                         Icons.apple,
                         size: 24,
-                        color: authState.isLoading ? AppColors.grey400 : AppColors.grey800,
+                        color: (authState.isLoading || !_acceptedTerms) ? AppColors.grey400 : AppColors.grey800,
                       ),
-                      label: Text(AppStrings.continueWithApple),
+                      label: Text(
+                        AppStrings.continueWithApple,
+                        style: TextStyle(
+                          color: (authState.isLoading || !_acceptedTerms)
+                              ? AppColors.grey400
+                              : AppColors.grey800,
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.grey800,
+                        foregroundColor: (authState.isLoading || !_acceptedTerms)
+                            ? AppColors.grey400
+                            : AppColors.grey800,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        side: BorderSide(color: AppColors.grey300),
+                        side: BorderSide(
+                          color: (authState.isLoading || !_acceptedTerms)
+                              ? AppColors.grey200
+                              : AppColors.grey300,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),

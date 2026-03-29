@@ -492,7 +492,7 @@ class _HomeSwipeScreenState extends ConsumerState<HomeSwipeScreen>
                       ),
                       const SizedBox(width: 12),
                       Image.asset(
-                        'assets/images/app_logo.png',
+                        'assets/icons/icon_logo4.png',
                         width: 120,
                         height: 40,
                         fit: BoxFit.contain,

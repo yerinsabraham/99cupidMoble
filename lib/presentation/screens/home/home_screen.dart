@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_assets.dart';
 import '../../providers/auth_provider.dart';
 
 /// Home Screen - Main swipe interface (placeholder for now)
@@ -26,13 +27,10 @@ class HomeScreen extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      '99cupid',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                    Image.asset(
+                      AppAssets.appLogo,
+                      height: 36,
+                      fit: BoxFit.contain,
                     ),
                     IconButton(
                       icon: const Icon(Icons.logout, color: Colors.white),
@@ -51,14 +49,9 @@ class HomeScreen extends ConsumerWidget {
                     data: (profile) => Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.favorite,
-                          size: 100,
-                          color: Colors.white,
-                        ),
                         const SizedBox(height: 24),
                         const Text(
-                          'Welcome to 99Cupid!',
+                          'Welcome to 99Cupid!',  
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,

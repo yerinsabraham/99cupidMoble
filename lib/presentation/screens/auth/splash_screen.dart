@@ -112,7 +112,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               child: Center(
                 child: Image.asset(
                   AppAssets.logo,
-                  width: 120,
+                  width: 220,
                   fit: BoxFit.contain,
                 ),
               ),
