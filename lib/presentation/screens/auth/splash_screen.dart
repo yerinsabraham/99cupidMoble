@@ -24,14 +24,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _navigateToNextScreen() async {
-    // Wait for a minimum time to show the splash screen
-    await Future.delayed(const Duration(seconds: 2));
+    // Wait for both: the splash minimum display time AND Firebase to restore
+    // auth state from disk. Using authStateChanges().first guarantees we get
+    // the real persisted auth state rather than a null from a race condition.
+    final results = await Future.wait([
+      Future.delayed(const Duration(seconds: 2)),
+      FirebaseAuth.instance.authStateChanges().first,
+    ]);
 
     if (!mounted) return;
 
-    // Get current user directly from Firebase Auth (not from provider)
-    // This ensures we get the actual current state after app reinstall
-    final User? currentUser = FirebaseAuth.instance.currentUser;
+    final User? currentUser = results[1] as User?;
 
     debugPrint('Splash: currentUser = ${currentUser?.uid}');
 
@@ -90,8 +93,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         }
       } catch (e) {
         debugPrint('Error checking profile: $e');
-        // Default to onboarding on error
-        context.go('/onboarding/setup');
+        // Firestore error - user is still logged in, send to home rather than
+        // logging them out or forcing re-onboarding
+        context.go('/home');
       }
     } else {
       debugPrint('Splash: No user logged in, going to login');
